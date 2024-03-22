@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
-
+//Admin Login 
 func AdminLogin(c *gin.Context) {
     var admin models.AdminModel
     if err := c.BindJSON(&admin); err != nil {
@@ -63,10 +63,9 @@ func AdminLogin(c *gin.Context) {
 
 }
 
+
+//Admin Logout 
 func AdminLogout(c *gin.Context){
-
-    c.SetCookie("jwt_token", "", -1, "/", "localhost:3000/adminlogout", false, true)
-
-    //Respond with Successful Logout 
+ //Respond with Successful Logout 
     c.JSON(http.StatusOK,gin.H{"message":"Successfully Logout"})
 }

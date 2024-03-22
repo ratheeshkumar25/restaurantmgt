@@ -30,15 +30,15 @@ func UserRoutes() *gin.Engine {
 	admin.PUT("menu/:id", controllers.UpdateMenu)
 	admin.DELETE("menu/:id", controllers.DeleteMenu)
 	admin.GET("/table", controllers.GetTables)
-	admin.POST("table/add", controllers.CreateTable)
-	admin.DELETE("table/delete", controllers.DeleteTable)
+	admin.DELETE("table/:id", controllers.DeleteTable)
 	
 
 	//Users middleware authentication view menulist , specified menu
 	users := r.Group("/users")
 	users.Use(middleware.UserauthMiddleware())
 	users.GET("/menulist",controllers.GetMenuList)
-	users.GET("menu/:id", controllers.GetMenu)
+	users.POST("table/add", controllers.CreateTable)
+
 	
 	
 

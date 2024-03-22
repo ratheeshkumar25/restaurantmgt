@@ -12,14 +12,13 @@ import (
 func GetMenuList(c *gin.Context) {
 	var menus []models.MenuModel
 	database.DB.Find(&menus)
-	fmt.Println(menus)
+	//fmt.Println(menus)
 		c.JSON(200, gin.H{
 			"status":"Success",
 			"message": "Menu details fetched successfully",
 			"data":menus,
 		})
 }
-
 //Access to particular menu for user to check with food id 
 func GetMenu(c *gin.Context){
 	//Reterive the food_id parameter from the URL 
@@ -59,6 +58,7 @@ func CreateMenu(c *gin.Context){
 c.JSON(201,gin.H{"message":"Item added successfully"})
 }
 
+//Updae the menu for admin with authentication 
 func UpdateMenu(c *gin.Context){
 	var menu models.MenuModel
 
@@ -97,6 +97,7 @@ func UpdateMenu(c *gin.Context){
 		})
 }
 
+//Delete the menu for admin with authentication 
 func DeleteMenu(c *gin.Context){
 	id := c.Param("id")
 	var menu models.MenuModel

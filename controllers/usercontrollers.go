@@ -110,7 +110,7 @@ func SignupVerify(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"Success": true, "Message": "OTP verified successfully"})
 
 	}
-
+    // Create a Twilio REST client
 	client := twilio.NewRestClientWithParams(twilio.ClientParams{
 		Username: accountSID,
 		Password: authToken,
@@ -155,7 +155,7 @@ func SignupVerify(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"Success": true, "Message": "OTP verified successfully"})
 
 }
-
+//User logout 
 func UserLogout(c *gin.Context) {
 
 	//After Successful LOGOUT
