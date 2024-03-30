@@ -1,13 +1,17 @@
 package models
 
-import "time"
+import (
+
+
+	"gorm.io/gorm"
+)
 
 type MenuModel struct {
-	Food_id   int       `gorm:"primaryKey"`
-	Category   string    `json:"category"`
-	Name       string    `json:"name"`
-	Price      float64   `json:"price"`
-	Food_image string    `json:"foodimage"`
-	Duration   time.Time `json:"duration"`
-	TableID    uint 
+	gorm.Model
+	Category   string    `json:"category" validate:"required"`
+	Name       string    `json:"name" validate:"required"`
+	Price      float64   `json:"price" validate:"required"`
+	FoodImage string     `json:"foodImage" validate:"required"`
+	Duration   string 	 `json:"duration" validate:"required"`
+	TableID    int 		 `json:"tableID"` 
 }

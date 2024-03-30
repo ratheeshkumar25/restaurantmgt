@@ -4,17 +4,18 @@ import (
 	"restaurant/database"
 	"restaurant/helper"
 	"restaurant/routes"
-	//"github.com/gin-gonic/gin"
 )
 
+//Init function to handle application initialization tasks
 func Init(){
 	helper.LoadEnv()
 	database.DBconnect()
 	database.InitRedis()
 }
 
+//
 func main() {
-
+//Perform application initialization
 	Init()
 	r := routes.UserRoutes()
 	

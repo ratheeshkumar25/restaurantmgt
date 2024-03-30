@@ -7,14 +7,13 @@ import "github.com/dgrijalva/jwt-go"
 type UsersModel struct {
 	UserID   int    `gorm:"primaryKey" `
 	Phone    string `json:"phone" validate:"required"`
-	Username string `json:"name"`
-	// 	Token         string `json:"token"`
-	// 	Refresh_token string `json:"Refreshtoken"`
+	Username string `json:"username"`
 }
 
 //verify the otp
 
 type VerifyOTP struct {
+	Username string `json:"username"`
 	Phone string `json:"phone"`
 	Otp   string `json:"otp"`
 }

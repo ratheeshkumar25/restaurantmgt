@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"errors"
-	"fmt"
+	//"fmt"
 	"restaurant/models"
 	"strings"
 
@@ -16,11 +16,6 @@ import (
 var (
 	jwtKey = []byte("sdjgertoweipskfrtqw")
 )
-
-// type AdminClaims struct {
-// 	Username string `json:"username"`
-// 	jwt.StandardClaims
-// }
 
 
 //Generate Token
@@ -39,18 +34,18 @@ func GenerateAdminToken(username string )(string,error){
 
 // VerifyAdminToken verifies the JWT token and returns the admin's username
 func AdminAuthentication(tokenString string) (string, error) {
-	fmt.Println("Received token",tokenString)
+	//fmt.Println("Received token",tokenString)
     token, err := jwt.ParseWithClaims(tokenString, &models.AdminClaims{}, func(token *jwt.Token) (interface{}, error) {
         return jwtKey, nil
     })
 
     if err != nil {
-		fmt.Println("Error parsing/validating token:", err)
+		//fmt.Println("Error parsing/validating token:", err)
         return "", err
     }
 
     if claims, ok := token.Claims.(*models.AdminClaims); ok && token.Valid {
-		fmt.Println("Token claims:", claims)
+		//fmt.Println("Token claims:", claims)
         return claims.Username, nil
     }
 

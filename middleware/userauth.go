@@ -12,10 +12,10 @@ import (
 	//"github.com/gin-gonic/gin"
 )
 
-func Trim(token string)(string,error){
-	parts := strings.SplitN(token,"Bearer ",2)
-	return AuthenticateUser(parts[1])
-}
+// func Trim(token string)(string,error){
+// 	parts := strings.SplitN(token,"Bearer ",2)
+// 	return AuthenticateUser(parts[1])
+// }
 
 
 func GenerateUsertoken(phone string) (string, error) {
@@ -68,7 +68,7 @@ func UserauthMiddleware() gin.HandlerFunc {
 		return func (c *gin.Context){
 			// Extract token from the request header or other sources
 			tokenString := c.GetHeader("Authorization")
-			fmt.Println("Authorization Header",tokenString)
+			//fmt.Println("Authorization Header",tokenString)
 	
 			// Check if token exists
 			if tokenString == "" {
@@ -81,7 +81,7 @@ func UserauthMiddleware() gin.HandlerFunc {
 		
 			phone, err := AuthenticateUser(authHeader)
 			if err != nil {
-				fmt.Println("Error authenticating user:", err)
+				//fmt.Println("Error authenticating user:", err)
 				c.AbortWithStatusJSON(401, gin.H{"error": err.Error()})
 				return
 			}

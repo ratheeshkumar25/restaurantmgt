@@ -17,7 +17,6 @@ func AdminLogin(c *gin.Context) {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
     }
-    fmt.Println("hiiiiii")
     // Retrieve admin from the database
     var dbAdmin models.AdminModel
     if err := database.DB.Where("username = ?", admin.Username).First(&dbAdmin).Error; err != nil {

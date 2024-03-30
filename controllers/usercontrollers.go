@@ -21,6 +21,7 @@ func GetLogin(c *gin.Context) {
 		"message": "Welcome to RERA Restaurant World Please log in with your mobile"})
 }
 
+
 // Postloginhandler handles the login request
 func PostLoginHander(c *gin.Context) {
 	var users models.UsersModel
@@ -37,7 +38,7 @@ func PostLoginHander(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "Token Generated Succesfully", token: "token"})
+		c.JSON(http.StatusOK, gin.H{"message": "Token Generated Succesfully", "token": token})
 
 		return
 	} else if err != gorm.ErrRecordNotFound {
@@ -53,7 +54,7 @@ func PostLoginHander(c *gin.Context) {
 	}
 
 	key := fmt.Sprintf("user:%s", users.Phone)
-	err = database.SetRedis(key, users.Phone, time.Minute*5)
+	err = database.SetRedis(key,users.Phone, time.Minute*5)
 	if err != nil {
 		fmt.Println("Error srtting user in Redis:", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"Success": false, "Data": nil, "Message": "Internal server error"})
@@ -143,18 +144,20 @@ func SignupVerify(c *gin.Context) {
 
 	var user models.UsersModel
 	user.Phone = value
+	user.Username = value
 
 	err = database.DB.Create(&user).Error
 	if err != nil {
 		fmt.Println("Error creating user", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"Success": false, "Data": nil, "Message": "Failed to create user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"Status": false, "Data": nil, "Message": "Failed to create user"})
 		return
 	}
 
 	// Success response
-	c.JSON(http.StatusOK, gin.H{"Success": true, "Message": "OTP verified successfully"})
+	c.JSON(http.StatusOK, gin.H{"Status": true, "Message": "OTP verified successfully"})
 
 }
+
 //User logout 
 func UserLogout(c *gin.Context) {
 
