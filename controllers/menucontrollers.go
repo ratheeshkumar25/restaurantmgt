@@ -68,7 +68,7 @@ func CreateMenu(c *gin.Context) {
 		return
 	}
 	fmt.Println("Menu added", menu)
-	c.JSON(201, gin.H{"message": "Item added successfully", "data":menu})
+	c.JSON(201, gin.H{"message": "Item added successfully", "data": menu})
 }
 
 // Update the menu for admin with authentication

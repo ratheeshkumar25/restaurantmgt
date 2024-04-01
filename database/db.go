@@ -21,7 +21,7 @@ func DBconnect() {
 
 	DB.AutoMigrate(&models.UsersModel{}, &models.AdminModel{}, &models.InvoicesModel{},
 		&models.MenuModel{}, &models.NotesModel{}, &models.NotificationModel{}, 
-		&models.StaffModel{}, &models.TablesModel{}, &models.VerifyOTP{},)
+		&models.StaffModel{}, &models.TablesModel{},)
 
 }
 
@@ -45,4 +45,12 @@ func GetMenuByID(menuID uint)(*models.MenuModel,error){
 		return nil, err
 	}
 	return &menu,nil
+}
+
+func GetReservationByID(tableID uint)(*models.TablesModel,error){
+	var reservation models.TablesModel
+	if err := DB.Where("table_id = ?",tableID).First(&reservation).Error; err != nil{
+		return nil,err
+	}
+	return &reservation, nil
 }

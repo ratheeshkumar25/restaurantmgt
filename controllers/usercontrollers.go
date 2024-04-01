@@ -2,6 +2,10 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/twilio/twilio-go"
+	verify "github.com/twilio/twilio-go/rest/verify/v2"
+	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"os"
@@ -9,18 +13,12 @@ import (
 	"restaurant/middleware"
 	"restaurant/models"
 	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/twilio/twilio-go"
-	verify "github.com/twilio/twilio-go/rest/verify/v2"
-	"gorm.io/gorm"
 )
 
 func GetLogin(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Welcome to RERA Restaurant World Please log in with your mobile"})
 }
-
 
 // Postloginhandler handles the login request
 func PostLoginHander(c *gin.Context) {
@@ -54,7 +52,7 @@ func PostLoginHander(c *gin.Context) {
 	}
 
 	key := fmt.Sprintf("user:%s", users.Phone)
-	err = database.SetRedis(key,users.Phone, time.Minute*5)
+	err = database.SetRedis(key, users.Phone, time.Minute*5)
 	if err != nil {
 		fmt.Println("Error srtting user in Redis:", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"Success": false, "Data": nil, "Message": "Internal server error"})
@@ -63,7 +61,6 @@ func PostLoginHander(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "OTP generated successfull go to verification page"})
 
 }
-
 
 // SendOTP is send the OTP via Twilio SMS
 func SendOTP(phoneNumber string) error {
@@ -92,8 +89,6 @@ func SendOTP(phoneNumber string) error {
 	return nil
 }
 
-
-
 // VerifyOtp verifies the OTP sent to the users phone
 func SignupVerify(c *gin.Context) {
 	accountSID := os.Getenv("TWILIO_ACCOUNT_SID")
@@ -111,7 +106,7 @@ func SignupVerify(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"Success": true, "Message": "OTP verified successfully"})
 
 	}
-    // Create a Twilio REST client
+	// Create a Twilio REST client
 	client := twilio.NewRestClientWithParams(twilio.ClientParams{
 		Username: accountSID,
 		Password: authToken,
@@ -158,7 +153,7 @@ func SignupVerify(c *gin.Context) {
 
 }
 
-//User logout 
+// User logout
 func UserLogout(c *gin.Context) {
 
 	//After Successful LOGOUT

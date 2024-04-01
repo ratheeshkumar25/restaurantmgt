@@ -6,8 +6,7 @@ import "gorm.io/gorm"
 
 type TablesModel struct {
 	gorm.Model
-	TableID 		int `json:"tableID"`
-	Number_of_guest int `json:"numberofGuest"`
+	TableID         int  `json:"tableID"`
+	Number_of_guest int  `json:"numberofGuest"`
 	UserID          uint `json:"userID"`
-	
 }

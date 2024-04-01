@@ -2,11 +2,10 @@ package controllers
 
 import (
 	//"fmt"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"restaurant/database"
 	"restaurant/models"
-
-	"github.com/gin-gonic/gin"
 )
 
 // Getables retrieves details of all the tables
@@ -22,10 +21,10 @@ func GetTables(c *gin.Context) {
 }
 
 func GetTable(c *gin.Context) {
-	tableId := c.Param("id")
+	tableID := c.Param("id")
 	var tables models.TablesModel
 
-	if err := database.DB.First(&tables, "table_id =? ", tableId).Error; err != nil {
+	if err := database.DB.First(&tables, "table_id =? ", tableID).Error; err != nil {
 		c.JSON(400, gin.H{
 			"status":  "Failed",
 			"message": "Table not found",
@@ -49,15 +48,9 @@ func ReserveTable(c *gin.Context) {
 		return
 	}
 
-	var existingTable models.TablesModel
-	if err := database.DB.First(&existingTable, table.TableID).Error; err != nil {
-		c.JSON(404, gin.H{"error": "table not found"})
-
-	}
-
 	//Check if table is available for reservation
-	if !IsTableAvailable(uint(table.TableID)){
-		c.JSON(http.StatusConflict, gin.H{"error":"The table already booked"})
+	if !IsTableAvailable(uint(table.TableID)) {
+		c.JSON(http.StatusConflict, gin.H{"error": "The table already booked"})
 		return
 	}
 
@@ -73,10 +66,10 @@ func ReserveTable(c *gin.Context) {
 	})
 }
 
-func IsTableAvailable(tableID uint)bool{
+func IsTableAvailable(tableID uint) bool {
 	var reservation models.TablesModel
 
-	if err := database.DB.Where("table_id = ?",tableID).First(&reservation).Error; err != nil{
+	if err := database.DB.Where("table_id = ?", tableID).First(&reservation).Error; err != nil {
 		return true
 	}
 	return false

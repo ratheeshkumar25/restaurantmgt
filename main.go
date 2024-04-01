@@ -6,22 +6,20 @@ import (
 	"restaurant/routes"
 )
 
-//Init function to handle application initialization tasks
-func Init(){
+// Init function to handle application initialization tasks
+func Init() {
 	helper.LoadEnv()
 	database.DBconnect()
 	database.InitRedis()
 }
 
-//
 func main() {
-//Perform application initialization
+	//Perform application initialization
 	Init()
 	r := routes.UserRoutes()
-	
 
 	//Run the engine the port 3000
-	if err := r.Run(":3000"); err !=nil{
+	if err := r.Run(":3000"); err != nil {
 		panic(err) //Handle error if unable to start server
 	}
 

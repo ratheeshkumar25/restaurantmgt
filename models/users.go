@@ -14,8 +14,8 @@ type UsersModel struct {
 
 type VerifyOTP struct {
 	Username string `json:"username"`
-	Phone string `json:"phone"`
-	Otp   string `json:"otp"`
+	Phone    string `json:"phone"`
+	Otp      string `json:"otp"`
 }
 
 //Userclaims struct for JWT authentication
