@@ -15,13 +15,14 @@ type InvoicesModel struct {
 	PaymentDueDate time.Time `json:"paymentDueDate"`
 	PaymentStatus  string    `json:"paymentStatus"`
 	MenuID         uint
+	UserID         uint
 }
 
 // RazorPay Model
 type RazorPay struct {
-	UserID          uint    `JSON:"userid"`
-	RazorPaymentID  string  `JSON:"razorpaymentid" gorm:"primaryKey"`
-	RazorPayOrderID string  `JSON:"razorpayorderid"`
+	InvoiceID       uint    `JSON:"userID"`
+	RazorPaymentID  string  `JSON:"razorpaymentID" gorm:"primaryKey;autoIncrement"`
+	RazorPayOrderID string  `JSON:"razorpayorderID"`
 	Signature       string  `JSON:"signature"`
 	AmountPaid      float64 `JSON:"amountpaid"`
 }

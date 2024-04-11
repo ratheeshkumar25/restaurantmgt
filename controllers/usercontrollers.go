@@ -1,11 +1,8 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/twilio/twilio-go"
-	verify "github.com/twilio/twilio-go/rest/verify/v2"
-	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"os"
@@ -13,15 +10,46 @@ import (
 	"restaurant/middleware"
 	"restaurant/models"
 	"time"
-)
 
-func GetLogin(c *gin.Context) {
+	"github.com/gin-gonic/gin"
+	"github.com/twilio/twilio-go"
+	verify "github.com/twilio/twilio-go/rest/verify/v2"
+	"gorm.io/gorm"
+)
+//User Login
+func GetHome(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Welcome to RERA Restaurant World Please log in with your mobile"})
 }
 
+// func Login(c *gin.Context){
+// 	var user models.UsersModel
+// 	if err := c.BindJSON(&user); err != nil{
+// 		c.JSON(400,gin.H{"error":err.Error()})
+// 		return
+// 	}
+//     var existingUser models.UsersModel
+// 	if err := database.DB.Where("phone = ?", user.Phone).First(&existingUser).Error; err == nil {
+// 		// // Generate Token
+// 		token, err := middleware.GenerateUsertoken(user.Phone,uint(user.UserID))
+// 		if err != nil {
+// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+// 			return
+// 		}
+		
+// 		c.JSON(http.StatusOK, gin.H{"message": "Token Generated Succesfully", "token": token})
+
+// 		return
+// 	} else if err != gorm.ErrRecordNotFound {
+
+// 		c.JSON(http.StatusInternalServerError, gin.H{"message": "db error exist"})
+// 		return
+// 	}
+
+// }
+
 // Postloginhandler handles the login request
-func PostLoginHander(c *gin.Context) {
+func PostLogin(c *gin.Context) {
 	var users models.UsersModel
 	if err := c.BindJSON(&users); err != nil {
 		log.Println("Error binding JSON:", err)
@@ -29,13 +57,14 @@ func PostLoginHander(c *gin.Context) {
 		return
 	}
 	// Check if user exists in database
-	if err := database.DB.Where("phone = ?", users.Phone).First(&models.UsersModel{}).Error; err == nil {
+	if err := database.DB.Where("phone = ?", users.Phone).First(&users).Error; err == nil {
 		// // Generate Token
-		token, err := middleware.GenerateUsertoken(users.Phone)
+		token, err := middleware.GenerateUsertoken(users.Phone,uint(users.UserID))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 			return
 		}
+		
 		c.JSON(http.StatusOK, gin.H{"message": "Token Generated Succesfully", "token": token})
 
 		return
@@ -50,9 +79,15 @@ func PostLoginHander(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send OTP", "data": err.Error()})
 		return
 	}
+ //Marshal json data 
+	userData, err := json.Marshal(&users)
+	if err != nil {
+		c.JSON(500,gin.H{"error":"failed to marshal user", "data":err.Error()})
+		return
+	}
 
 	key := fmt.Sprintf("user:%s", users.Phone)
-	err = database.SetRedis(key, users.Phone, time.Minute*5)
+	err = database.SetRedis(key, userData, time.Minute*5)
 	if err != nil {
 		fmt.Println("Error srtting user in Redis:", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"Success": false, "Data": nil, "Message": "Internal server error"})
@@ -136,10 +171,13 @@ func SignupVerify(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"Success": false, "Data": nil, "Message": "Internal server error"})
 		return
 	}
-
+   // Bind json data to unmarshal
 	var user models.UsersModel
-	user.Phone = value
-	user.Username = value
+	err = json.Unmarshal([]byte(value),&user)
+	if err != nil {
+		c.JSON(500,gin.H{"error":"failed to marshal user", "data":err.Error()})
+		return
+	}
 
 	err = database.DB.Create(&user).Error
 	if err != nil {

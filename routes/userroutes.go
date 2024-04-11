@@ -13,9 +13,11 @@ func UserRoutes() *gin.Engine {
 	//creates a new Gin engine instance with default configurations
 	r := gin.Default()
 
-	//Define user routers
-	r.GET("/users", controllers.GetLogin)
-	r.POST("/users/login", controllers.PostLoginHander)
+	//Define user router
+
+	r.GET("/users", controllers.GetHome)
+	//r.POST("l/login",controllers.Login)
+	r.POST("/users/login", controllers.PostLogin)
 	r.POST("/users/login/verify", controllers.SignupVerify)
 	r.POST("/logout", controllers.UserLogout)
 
@@ -34,13 +36,16 @@ func UserRoutes() *gin.Engine {
 		//table control
 		admin.GET("/table", controllers.GetTables)
 		admin.GET("/table/:id", controllers.GetTable)
-		admin.DELETE("/table/:id", controllers.DeleteTable)
+		admin.POST("table/add", controllers.CreateTable)
+		admin.PUT("table/:id", controllers.UpdateTable)
+		admin.DELETE("table/:id", controllers.RemoveTable)
+
 		//staff control
 		admin.GET("/staff", controllers.GetStaff)
 		admin.GET("/staff/:id", controllers.GetStaffByIDs)
 		admin.POST("/staff/add", controllers.AddStaff)
 		admin.PUT("/staff/:id", controllers.UpdateStaff)
-		admin.POST("/staff/:id", controllers.StaffAssignTable)
+		//admin.POST("/staff/:id", controllers.StaffAssignTable)
 		admin.DELETE("/staff/:id", controllers.RemoveStaff)
 		//order and invoice controller
 		admin.GET("invoice", controllers.GetInvoice)
@@ -50,15 +55,26 @@ func UserRoutes() *gin.Engine {
 	users := r.Group("/users")
 	users.Use(middleware.UserauthMiddleware())
 	{
+
 		users.GET("menu/:id", controllers.GetMenu)
 		users.GET("/menulist", controllers.GetMenuList)
 		users.GET("/table", controllers.GetTables)
-		users.POST("/table/add", controllers.ReserveTable)
+		// users.GET("searchtable/:id", controllers.GetTable)
+		users.GET("/searchreservation", controllers.SearchAvailableTables)
+		users.POST("/reservation", controllers.CreateReservartion)
+		users.POST("/movereservation/:id", controllers.UpdateReservation)
+		users.GET("/cancelreservation/:id", controllers.CancelReservation)
 		users.POST("/placeorder/invoice", controllers.PlaceOrder)
 		users.POST("/payinvoice/:id", controllers.PayInvoice)
 		users.PUT("/updateorder/:id", controllers.UpdatePlaceOrder)
-		//users.GET("invoice",controllers.GetInvoice)
+		users.GET("cancelorder/:id", controllers.CancelOrder)
+		users.POST("/rating", controllers.Rating)
+		users.GET("rating", controllers.ViewReview)
+	
+
 	}
+	r.GET("/online/pay/", controllers.MakePayment)
+	r.GET("/payment/success", controllers.SuccessPage)
 
 	return r
 }

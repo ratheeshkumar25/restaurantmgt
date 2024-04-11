@@ -65,5 +65,7 @@ func AdminLogin(c *gin.Context) {
 // Admin Logout
 func AdminLogout(c *gin.Context) {
 	//Respond with Successful Logout
+
+	
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully Logout"})
 }

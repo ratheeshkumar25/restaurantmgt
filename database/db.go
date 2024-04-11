@@ -19,9 +19,18 @@ func DBconnect() {
 	}
 	DB = db
 
-	DB.AutoMigrate(&models.UsersModel{}, &models.AdminModel{}, &models.InvoicesModel{},
-		&models.MenuModel{}, &models.NotesModel{}, &models.NotificationModel{}, 
-		&models.StaffModel{}, &models.TablesModel{},)
+	DB.AutoMigrate(
+		&models.UsersModel{}, 
+		&models.AdminModel{}, 
+		&models.InvoicesModel{},
+		&models.MenuModel{},
+		&models.ReviewModel{},
+		&models.NotificationModel{}, 
+		&models.StaffModel{},
+	    &models.TablesModel{},
+		&models.RazorPay{},
+		&models.ReservationModels{},
+	)
 
 }
 
@@ -46,6 +55,21 @@ func GetMenuByID(menuID uint)(*models.MenuModel,error){
 	}
 	return &menu,nil
 }
+
+func GetUsersByID(userID uint) (*models.UsersModel, error) {
+    // Return nil if userID is 0
+    if userID == 0 {
+        return nil, nil
+    }
+
+    var user models.UsersModel
+    if err := DB.Where("user_id = ?", userID).First(&user).Error; err != nil {
+        return nil, err
+    }
+    return &user, nil
+}
+
+
 
 func GetReservationByID(tableID uint)(*models.TablesModel,error){
 	var reservation models.TablesModel

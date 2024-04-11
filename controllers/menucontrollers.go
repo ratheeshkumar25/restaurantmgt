@@ -15,10 +15,22 @@ func GetMenuList(c *gin.Context) {
 	var menus []models.MenuModel
 	database.DB.Find(&menus)
 	//fmt.Println(menus)
+
+	//Prpare menu data for response ,including only desire fields
+	menuData := make([]gin.H,len(menus))
+	for i , menuItem := range menus{
+		menuData[i] = gin.H{
+			"menuID":menuItem.ID,
+			"name":menuItem.Name,
+			"category":menuItem.Category,
+			"price":menuItem.Price,
+			"duration":menuItem.Duration,
+		}
+	}
 	c.JSON(200, gin.H{
 		"status":  "Success",
 		"message": "Menu details fetched successfully",
-		"data":    menus,
+		"menulist": menuData,
 	})
 }
 
@@ -39,11 +51,15 @@ func GetMenu(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(200, gin.H{
-		"status":  "Success",
-		"message": "Menu details fetched successfully",
-		"data":    menuItem,
-	})
+	response := gin.H{
+		"message":"Menu details fetched successfully",
+		"menuID":menuItem.ID,
+		"name":menuItem.Name,
+		"category":menuItem.Category,
+		"price":menuItem.Price,
+		"duration":menuItem.Duration,
+	}
+	c.JSON(200, gin.H{"status":  "Success","menu":response})
 }
 
 // Create menulist for admin with authentication
@@ -125,8 +141,8 @@ func DeleteMenu(c *gin.Context) {
 	}
 	database.DB.Delete(&menu)
 	c.JSON(http.StatusOK, gin.H{
-		"status":  "Failed",
-		"message": "User Deleted Successfully",
+		"status":  "Success",
+		"message": "Item Removed Successfully",
 		"data":    id,
 	})
 

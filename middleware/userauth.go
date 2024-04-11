@@ -18,11 +18,15 @@ import (
 // }
 
 
-func GenerateUsertoken(phone string) (string, error) {
-	claims := jwt.MapClaims{
-		"phone": phone,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(),
-	}
+func GenerateUsertoken(phone string, userID uint) (string, error) {
+	fmt.Println(userID)
+	claims := models.UserClaims{
+		Phone:phone,
+		UserID: userID,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour*24).Unix(),
+			IssuedAt: time.Now().Unix(),
+		},	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
@@ -33,34 +37,36 @@ func GenerateUsertoken(phone string) (string, error) {
 
 }
 
-func AuthenticateUser (signedStringToken string)(string,error){
+func AuthenticateUser (signedStringToken string)(string,uint,error){
 	var userClaims models.UserClaims
 	token, err := jwt.ParseWithClaims(signedStringToken, &userClaims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(jwtKey), nil // Replace with your secret key
 	  })
 
 	  if err != nil {
-		return "",err
+		return "",0,err
 		}
 	//check the token is valid 
 	if !token.Valid{
-		return "",errors.New("token is not valid")
+		return "",0,errors.New("token is not valid")
 	}
 	//type assert the claims from the token object 
 	claims,ok := token.Claims.(*models.UserClaims)
 
 	if !ok {
 		err = errors.New("couldn't parse claims")
-		return "", err
+		return "",0, err
 	}
 	phone := claims.Phone
-	
+	userIDF :=float64(claims.UserID)
+	fmt.Println(userIDF)
 	if claims.ExpiresAt < time.Now().Unix() {
 		err = errors.New("token expired")
-		return "", err
+		return "",0, err
 	}
+	userID := uint(userIDF)
 
-	return phone, nil
+	return phone,userID, nil
 	
 }	  
 
@@ -75,17 +81,18 @@ func UserauthMiddleware() gin.HandlerFunc {
 				c.AbortWithStatusJSON(401, gin.H{"error": "User Authorization is missing"})
 				return
 			}
-		
+		   
 			// Trim the token to get the actual token string
-			authHeader := strings.TrimSpace(strings.TrimPrefix(tokenString,"Bearer"))
-		
-			phone, err := AuthenticateUser(authHeader)
+			//authHeader := strings.TrimSpace(strings.TrimPrefix(tokenString,"Bearer "))
+		    authHeader := strings.Replace(tokenString,"Bearer ","",1)
+			phone,userID, err := AuthenticateUser(authHeader)
 			if err != nil {
 				//fmt.Println("Error authenticating user:", err)
 				c.AbortWithStatusJSON(401, gin.H{"error": err.Error()})
 				return
 			}
-		
+		    c.Set("userID",userID)
+			fmt.Println(userID)
 			fmt.Println("Authenticated user:", phone)
 
 		}
