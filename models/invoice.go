@@ -2,23 +2,23 @@ package models
 
 import "time"
 
-//Invoice Model
+// Invoice model represents an invoice entity.
 type InvoicesModel struct {
 	InvoiceID      int       `gorm:"primaryKey;autoIncrement"`
 	OrderID        int       `gorm:"autoIncrement"`
 	TableID        int       `json:"tableID"`
 	StaffID        int       `json:"staffID"`
 	Quantity       int       `json:"quantity"`
-	UnitPrice      float64   `json:"unitPrice"`
+	Email          string    `json:"email"`
 	TotalAmount    float64   `json:"totalAmount"`
 	PaymentMethod  string    `json:"paymentMethod"`
 	PaymentDueDate time.Time `json:"paymentDueDate"`
 	PaymentStatus  string    `json:"paymentStatus"`
-	MenuID         uint
+	ItemID         uint
 	UserID         uint
 }
 
-// RazorPay Model
+// RazorPay model represents RazorPay payment details.
 type RazorPay struct {
 	InvoiceID       uint    `JSON:"userID"`
 	RazorPaymentID  string  `JSON:"razorpaymentID" gorm:"primaryKey;autoIncrement"`

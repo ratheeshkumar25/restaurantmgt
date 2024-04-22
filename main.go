@@ -16,7 +16,9 @@ func Init() {
 func main() {
 	//Perform application initialization
 	Init()
-	r := routes.UserRoutes()
+
+	// Initialize routes.
+	r := routes.Routes()
 	r.LoadHTMLGlob("templates/*")
 
 	//Run the engine the port 3000

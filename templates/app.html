@@ -43,6 +43,17 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+
+    //   // Function to display a success notification
+    //   function showSuccessNotification() {
+    //     Swal.fire({
+    //         title: 'Payment Success!',
+    //         text: 'Your payment was successful. An email confirmation has been sent.',
+    //         icon: 'success',
+    //         confirmButtonText: 'OK'
+    //     });
+    // }
+
     const bookID = document.getElementById("invoiceid").value;
     const orderid = document.getElementById("paymentid").value;
     const total = document.getElementById("total").value;
@@ -83,15 +94,15 @@
     };
 
     function verifyPayment(response, bookID, orderid, total) {
-        console.log(bookID)
+        console.log(bookID);
         $.ajax({
-            url: `/user/payment/success?bookID=${bookID}&payment_id=${response.razorpay_payment_id}&order_id=${orderid}&signature=${response.razorpay_signature}&total=${total}`,
+            url: `/payment/success?bookID=${bookID}&payment_id=${response.razorpay_payment_id}&order_id=${orderid}&signature=${response.razorpay_signature}&total=${total}`,
             method: 'GET',
             success: function(data) {
-                if (data.status) {
+                if (data) {
                     console.log('Payment success');
                     const id = response.razorpay_payment_id;
-                    window.location.href = `/success?id=${id}&bookID=${bookID}`;
+                    window.location.href = `/payment/success?id=${id}&bookID=${bookID}`;
                 } else {
                     console.log('Payment failed');
                     swal({
@@ -102,9 +113,13 @@
                     window.location.replace('/failed');
                 }
             },
-            error: function(data) {
-                console.log(data);
-            }
+            // error: function(data) {
+            //     console.log(data);
+            // }
+            error: function(xhr, status, error) {
+            console.error(xhr.responseText);
+            console.error(error);
+        }
         });
     }
 </script>

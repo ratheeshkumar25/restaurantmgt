@@ -22,32 +22,6 @@ func GetHome(c *gin.Context) {
 		"message": "Welcome to RERA Restaurant World Please log in with your mobile"})
 }
 
-// func Login(c *gin.Context){
-// 	var user models.UsersModel
-// 	if err := c.BindJSON(&user); err != nil{
-// 		c.JSON(400,gin.H{"error":err.Error()})
-// 		return
-// 	}
-//     var existingUser models.UsersModel
-// 	if err := database.DB.Where("phone = ?", user.Phone).First(&existingUser).Error; err == nil {
-// 		// // Generate Token
-// 		token, err := middleware.GenerateUsertoken(user.Phone,uint(user.UserID))
-// 		if err != nil {
-// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
-// 			return
-// 		}
-		
-// 		c.JSON(http.StatusOK, gin.H{"message": "Token Generated Succesfully", "token": token})
-
-// 		return
-// 	} else if err != gorm.ErrRecordNotFound {
-
-// 		c.JSON(http.StatusInternalServerError, gin.H{"message": "db error exist"})
-// 		return
-// 	}
-
-// }
-
 // Postloginhandler handles the login request
 func PostLogin(c *gin.Context) {
 	var users models.UsersModel

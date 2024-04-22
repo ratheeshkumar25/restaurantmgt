@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"restaurant/database"
 	"restaurant/models"
@@ -9,41 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
-
-func SearchAvailableTables(c *gin.Context) {
-	var request struct {
-		StartTime     time.Time `json:"startTime"`
-		EndTime       time.Time `json:"endTime"`
-		NumberOfGuest int       `json:"numberOfGuest"`
-	}
-
-	if err := c.BindJSON(&request); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-
-	var availableTables []models.TablesModel
-	err := database.DB.Where("capacity >= ? AND availability = true", request.NumberOfGuest).Find(&availableTables).Error
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Filter out the tables that are already reserved for the requested time slot
-	filteredTables := make([]models.TablesModel, 0)
-	for _, table := range availableTables {
-		var reservation models.ReservationModels
-		err = database.DB.Where("table_id = ? AND ((start_time <= ? AND end_time >= ?) OR (start_time <= ? AND end_time >= ?) OR (start_time >= ? AND end_time <= ?))", table.ID, request.StartTime, request.StartTime, request.EndTime, request.EndTime, request.StartTime, request.EndTime).First(&reservation).Error
-		if err == gorm.ErrRecordNotFound {
-			filteredTables = append(filteredTables, table)
-		}
-	}
-
-	c.JSON(200, gin.H{
-		"message": "Available tables fetched successfully",
-		"data":    filteredTables,
-	})
-}
 
 func CreateReservartion(c *gin.Context) {
 	var reservation models.ReservationModels
@@ -58,7 +24,7 @@ func CreateReservartion(c *gin.Context) {
 		return
 	}
 	//Assign tthe available table and staff to reservation
-	reservation.TableID = int(availableTable.ID)
+	reservation.TableID = uint(availableTable.ID)
 	reservation.StaffID = availableStaff.ID
 	//context
 	userIDContext, _ := c.Get("userID")
@@ -84,13 +50,14 @@ func CreateReservartion(c *gin.Context) {
 		return
 	}
 	c.JSON(201, gin.H{
-		"message":     "Reservation created successfully",
-		"reservation": reservation.ID,
-		"customerID":reservation.UserID,
-		"table":       reservation.TableID,
-		"startTime":   reservation.StartTime,
-		"endTime":     reservation.EndTime,
-		"staffServe":  reservation.StaffID,
+		"message":       "Reservation created successfully",
+		"reservation":   reservation.ID,
+		"customerID":    reservation.UserID,
+		"selectedGuest": reservation.NumberOfGuest,
+		"table":         reservation.TableID,
+		"startTime":     reservation.StartTime,
+		"endTime":       reservation.EndTime,
+		"staffServe":    reservation.StaffID,
 	})
 
 }
@@ -118,19 +85,44 @@ func UpdateReservation(c *gin.Context) {
 	}
 
 	// Update the reservation with the new table and staff assignments
-	reservation.TableID = int(availableTable.ID)
+	reservation.TableID = uint(availableTable.ID)
 	reservation.StaffID = availableStaff.ID
 	reservation.StartTime = updatedReservation.StartTime
 	reservation.EndTime = updatedReservation.EndTime
 
+	//context
+	userIDContext, _ := c.Get("userID")
+	fmt.Println(userIDContext)
+	userID := userIDContext.(uint)
+
+	var bookingID models.UsersModel
+
+	if err := database.DB.Where("user_id = ?", userID).First(&bookingID).Error; err == gorm.ErrRecordNotFound {
+		c.JSON(200, gin.H{"status": "Success",
+			"message": "No booking",
+			"data":    nil})
+		return
+	} else if err != nil {
+		c.JSON(404, gin.H{"status": "Failed",
+			"message": "Database error",
+			"data":    nil})
+		return
+	}
+	reservation.UserID = userID
 	if err := database.DB.Save(&reservation).Error; err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(200, gin.H{
-		"message": "Reservation updated successfully",
-		"data":    reservation,
+		"message":       "Reservation updated successfully",
+		"reservation":   reservation.ID,
+		"customerID":    reservation.UserID,
+		"selectedGuest": reservation.NumberOfGuest,
+		"table":         reservation.TableID,
+		"startTime":     reservation.StartTime,
+		"endTime":       reservation.EndTime,
+		"staffServe":    reservation.StaffID,
 	})
 }
 
@@ -152,90 +144,150 @@ func CancelReservation(c *gin.Context) {
 		"message": "Reservation canceled successfully",
 	})
 }
+func SearchAvailableTables(c *gin.Context) {
+	var request struct {
+		StartTime     time.Time `json:"startTime"`
+		EndTime       time.Time `json:"endTime"`
+		NumberOfGuest int       `json:"numberOfGuest"`
+	}
 
-// func checkAvailability(startTime, endTime time.Time, numGuests int) (*models.TablesModel, *models.StaffModel, error) {
-//     var availableTable models.TablesModel
-//     var availableStaff models.StaffModel
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
 
-//     // Check for available tables with sufficient capacity
-//     err := database.DB.Where("capacity >= ? AND availability = true", numGuests).Find(&availableTable).Error
-//     if err != nil {
-//         return nil, nil, fmt.Errorf("no available tables found")
-//     }
+	// Fetch available tables based on guest count
+	var availableTables []models.TablesModel
+	err := database.DB.Where("capacity >= ? AND availability = true", request.NumberOfGuest).Find(&availableTables).Error
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
 
-   
-// 	//Get and check available staff 
-// 	var availableStaffMember []models.StaffModel
-// 	err = database.DB.Where("blocked = false").Find(&availableStaff).Error
-//     if err != nil {
-//         return nil, nil, fmt.Errorf("no available staff found")
-//     }
-//     // Check if the table and staff are not already reserved for the requested duration
-//     for _, staff := range availableStaffMember {
-//         var reservation models.ReservationModels
-//         err = database.DB.Where("table_id = ? AND staff_id = ? AND ((start_time <= ? AND end_time >= ?) OR (start_time <= ? AND end_time >= ?) OR (start_time >= ? AND end_time <= ?))", availableTable.ID, staff.ID, startTime, startTime, endTime, endTime, startTime, endTime).First(&reservation).Error
-//         if err != nil && err != gorm.ErrRecordNotFound {
-//             return nil, nil, fmt.Errorf("failed to check availability: %v", err)
-//         }
+	// Fetch reservations that overlap with the requested time slot
+	var overlappingReservations []models.ReservationModels
+	err = database.DB.Where("(start_time < ? AND end_time > ?) OR (start_time >= ? AND start_time < ?) OR (end_time > ? AND end_time <= ?)", request.EndTime, request.StartTime, request.StartTime, request.EndTime, request.StartTime, request.EndTime).Find(&overlappingReservations).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
 
-//         if err == gorm.ErrRecordNotFound {
-//             availableStaff = staff
-//             break
-//         }
-//     }
+	// Separate available and booked tables
+	var availableTableIDs, bookedTableIDs []uint
+	bookedTables := make(map[uint][]models.ReservationModels)
 
-//     if availableStaff.ID == 0 {
-//         return nil, nil, fmt.Errorf("selected table and staff are not available for the requested time slot")
-//     }
+	for _, reservation := range overlappingReservations {
+		bookedTableIDs = append(bookedTableIDs, reservation.TableID)
+		bookedTables[reservation.TableID] = append(bookedTables[reservation.TableID], reservation)
+	}
 
-//     return &availableTable, &availableStaff, nil
-// }
+	for _, table := range availableTables {
+		if containsUint(bookedTableIDs, table.ID) {
+			continue
+		}
+		availableTableIDs = append(availableTableIDs, table.ID)
+	}
+
+	// Prepare response data for available tables
+	var availableTableData []gin.H
+	for _, tableID := range availableTableIDs {
+		table, err := getTableCapacityByID(tableID)
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		availableTableData = append(availableTableData, gin.H{
+			"table_id":     table.ID,
+			"capacity":     table.Capacity,
+			"availability": true,
+		})
+	}
+
+	// Prepare response data for booked tables with reservation details
+	var bookedTableData []gin.H
+	for _, reservation := range overlappingReservations {
+		bookedTableData = append(bookedTableData, gin.H{
+			"table_id":      reservation.TableID,
+			"reservationID": reservation.ID,
+			"numberofGuest": reservation.NumberOfGuest,
+			"startTime":     reservation.StartTime,
+			"endTime":       reservation.EndTime,
+		})
+	}
+
+	c.JSON(200, gin.H{
+		"message":          "Tables availability information fetched successfully",
+		"available_tables": availableTableData,
+		"booked_tables":    bookedTableData,
+	})
+}
+
+// Custom function to check if a slice of uint contains a specific uint value
+func containsUint(slice []uint, val uint) bool {
+	for _, item := range slice {
+		if item == val {
+			return true
+		}
+	}
+	return false
+}
+
+func getTableCapacityByID(tableID uint) (*models.TablesModel, error) {
+	var table models.TablesModel
+	if err := database.DB.Where("id = ?", tableID).Find(&table).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &table, nil
+}
 
 func checkAvailability(startTime, endTime time.Time, numGuests int) (*models.TablesModel, *models.StaffModel, error) {
-    var availableTable models.TablesModel
-    var availableStaff models.StaffModel
+	var availableTable models.TablesModel
+	var availableStaff models.StaffModel
 
-    // Check for available tables with sufficient capacity
-    err := database.DB.Where("capacity >= ? AND availability = true", numGuests).First(&availableTable).Error
-    if err != nil {
-        return nil, nil, fmt.Errorf("no available tables found")
-    }
+	// Check for available tables with sufficient capacity
+	err := database.DB.Where("capacity >= ? AND availability = true", numGuests).First(&availableTable).Error
+	if err != nil {
+		return nil, nil, fmt.Errorf("no available tables found")
+	}
 
-    // Get all available staff members
-    var availableStaffMembers []models.StaffModel
-    err = database.DB.Where("blocked = false").Find(&availableStaffMembers).Error
-    if err != nil {
-        return nil, nil, fmt.Errorf("no available staff found")
-    }
+	// Get all available staff members
+	var availableStaffMembers []models.StaffModel
+	err = database.DB.Where("blocked = false").Find(&availableStaffMembers).Error
+	if err != nil {
+		return nil, nil, fmt.Errorf("no available staff found")
+	}
 
-    // Check if the table is not already reserved for the requested duration
-    var reservations []models.ReservationModels
-    err = database.DB.Where("table_id = ? AND ((start_time < ? AND end_time > ?) OR (start_time >= ? AND start_time < ?) OR (end_time > ? AND end_time <= ?))", availableTable.ID, startTime, endTime, startTime, endTime, startTime, endTime).Find(&reservations).Error
-    if err != nil {
-        return nil, nil, fmt.Errorf("failed to check table availability: %v", err)
-    }
+	// Check if the table is not already reserved for the requested duration
+	var reservations []models.ReservationModels
+	err = database.DB.Where("table_id = ? AND ((start_time < ? AND end_time > ?) OR (start_time >= ? AND start_time < ?) OR (end_time > ? AND end_time <= ?))", availableTable.ID, startTime, endTime, startTime, endTime, startTime, endTime).Find(&reservations).Error
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to check table availability: %v", err)
+	}
 
-    if len(reservations) > 0 {
-        return nil, nil, fmt.Errorf("selected table is not available for the requested time slot")
-    }
+	if len(reservations) > 0 {
+		return nil, nil, fmt.Errorf("selected table is not available for the requested time slot")
+	}
 
-    // Check if a staff member is available for the requested duration
-    for _, staff := range availableStaffMembers {
-        var reservationsForStaff []models.ReservationModels
-        err = database.DB.Where("staff_id = ? AND ((start_time < ? AND end_time > ?) OR (start_time >= ? AND start_time < ?) OR (end_time > ? AND end_time <= ?))", staff.ID, startTime, endTime, startTime, endTime, startTime, endTime).Find(&reservationsForStaff).Error
-        if err != nil {
-            return nil, nil, fmt.Errorf("failed to check staff availability: %v", err)
-        }
+	// Check if a staff member is available for the requested duration
+	for _, staff := range availableStaffMembers {
+		var reservationsForStaff []models.ReservationModels
+		err = database.DB.Where("staff_id = ? AND ((start_time < ? AND end_time > ?) OR (start_time >= ? AND start_time < ?) OR (end_time > ? AND end_time <= ?))", staff.ID, startTime, endTime, startTime, endTime, startTime, endTime).Find(&reservationsForStaff).Error
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to check staff availability: %v", err)
+		}
 
-        if len(reservationsForStaff) == 0 {
-            availableStaff = staff
-            break
-        }
-    }
+		if len(reservationsForStaff) == 0 {
+			availableStaff = staff
+			break
+		}
+	}
 
-    if availableStaff.ID == 0 {
-        return nil, nil, fmt.Errorf("no staff available for the requested time slot")
-    }
+	if availableStaff.ID == 0 {
+		return nil, nil, fmt.Errorf("no staff available for the requested time slot")
+	}
 
-    return &availableTable, &availableStaff, nil
+	return &availableTable, &availableStaff, nil
 }

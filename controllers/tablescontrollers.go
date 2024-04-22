@@ -104,10 +104,17 @@ func GetTables(c *gin.Context) {
 	//reterive the tableinformation
 	var tables []models.TablesModel
 	database.DB.Find(&tables)
+	response := make([]gin.H,len(tables))
+	for i,tableData := range tables{
+		response[i] = gin.H{
+			"tableID":tableData.ID,
+			"capacity":tableData.Capacity,
+		}
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"Status":  "Success",
 		"message": "Table details fetched successfully",
-		"data":    tables,
+		"data":    response,
 	})
 }
 

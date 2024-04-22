@@ -1,20 +1,17 @@
 package routes
 
 import (
+	"github.com/gin-gonic/gin"
 	"restaurant/controllers"
 	"restaurant/middleware"
-
-	//"restaurant/middleware"
-
-	"github.com/gin-gonic/gin"
 )
 
-func UserRoutes() *gin.Engine {
+// Routes sets up the routes for the application.
+func Routes() *gin.Engine {
 	//creates a new Gin engine instance with default configurations
 	r := gin.Default()
 
 	//Define user router
-
 	r.GET("/users", controllers.GetHome)
 	//r.POST("l/login",controllers.Login)
 	r.POST("/users/login", controllers.PostLogin)
@@ -33,6 +30,7 @@ func UserRoutes() *gin.Engine {
 		admin.POST("/menu/add", controllers.CreateMenu)
 		admin.PUT("/menu/:id", controllers.UpdateMenu)
 		admin.DELETE("menu/:id", controllers.DeleteMenu)
+
 		//table control
 		admin.GET("/table", controllers.GetTables)
 		admin.GET("/table/:id", controllers.GetTable)
@@ -45,10 +43,18 @@ func UserRoutes() *gin.Engine {
 		admin.GET("/staff/:id", controllers.GetStaffByIDs)
 		admin.POST("/staff/add", controllers.AddStaff)
 		admin.PUT("/staff/:id", controllers.UpdateStaff)
-		//admin.POST("/staff/:id", controllers.StaffAssignTable)
 		admin.DELETE("/staff/:id", controllers.RemoveStaff)
+
 		//order and invoice controller
 		admin.GET("invoice", controllers.GetInvoice)
+
+		//Sales Report
+		admin.GET("/totalorder", controllers.TotalOrder)
+		admin.GET("/sales", controllers.TotalSales)
+		admin.GET("/employeeperformance", controllers.EmployeePerfomance)
+		admin.GET("/revenue", controllers.RevenueReport)
+		admin.GET("/mostorderitem", controllers.MostOrderedItems)
+		admin.GET("/invoices/:id/pdf", controllers.GetPDFInvoice)
 	}
 
 	//Users middleware authentication view menulist , specified menu
@@ -62,7 +68,7 @@ func UserRoutes() *gin.Engine {
 		// users.GET("searchtable/:id", controllers.GetTable)
 		users.GET("/searchreservation", controllers.SearchAvailableTables)
 		users.POST("/reservation", controllers.CreateReservartion)
-		users.POST("/movereservation/:id", controllers.UpdateReservation)
+		users.PUT("/movereservation/:id", controllers.UpdateReservation)
 		users.GET("/cancelreservation/:id", controllers.CancelReservation)
 		users.POST("/placeorder/invoice", controllers.PlaceOrder)
 		users.POST("/payinvoice/:id", controllers.PayInvoice)
@@ -70,11 +76,11 @@ func UserRoutes() *gin.Engine {
 		users.GET("cancelorder/:id", controllers.CancelOrder)
 		users.POST("/rating", controllers.Rating)
 		users.GET("rating", controllers.ViewReview)
-	
 
 	}
 	r.GET("/online/pay/", controllers.MakePayment)
 	r.GET("/payment/success", controllers.SuccessPage)
+	r.GET("/failed", controllers.FailurePage)
 
 	return r
 }

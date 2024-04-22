@@ -1,15 +1,16 @@
 package database
 
 import (
-	"os"
-	"restaurant/models"
-     "errors"
+	"errors"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"os"
+	"restaurant/models"
 )
 
 var DB *gorm.DB
 
+// DBConnect initializes the database connection.
 func DBconnect() {
 	dsn := os.Getenv("DSN")
 
@@ -20,61 +21,65 @@ func DBconnect() {
 	DB = db
 
 	DB.AutoMigrate(
-		&models.UsersModel{}, 
-		&models.AdminModel{}, 
+		&models.UsersModel{},
+		&models.AdminModel{},
 		&models.InvoicesModel{},
 		&models.MenuModel{},
 		&models.ReviewModel{},
-		&models.NotificationModel{}, 
 		&models.StaffModel{},
-	    &models.TablesModel{},
+		&models.TablesModel{},
 		&models.RazorPay{},
 		&models.ReservationModels{},
 	)
 
 }
 
-func GetOrderByID(orderID uint)(*models.InvoicesModel,error){
+// GetOrderByID retrieves an order by its ID.
+func GetOrderByID(orderID uint) (*models.InvoicesModel, error) {
 	var order models.InvoicesModel
-	if err := DB.First(&order,orderID).Error; err != nil{
-		if errors.Is(err, gorm.ErrRecordNotFound){
-			return nil,nil
+	if err := DB.First(&order, orderID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
 		}
 		return nil, err
 	}
-	return &order,nil
+	return &order, nil
 }
 
-func GetMenuByID(menuID uint)(*models.MenuModel,error){
+// GetMenuByID retrieves a menu item by its ID.
+func GetMenuByID(menuID uint) (*models.MenuModel, error) {
 	var menu models.MenuModel
-	if  err := DB.First(&menu,menuID).Error; err != nil{
-		if errors.Is(err,gorm.ErrRecordNotFound){
-			return nil,nil
+	if err := DB.First(&menu, menuID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
 		}
 		return nil, err
 	}
-	return &menu,nil
+	return &menu, nil
 }
 
+// GetUsersByID retrieves a user by their ID.
 func GetUsersByID(userID uint) (*models.UsersModel, error) {
-    // Return nil if userID is 0
-    if userID == 0 {
-        return nil, nil
-    }
+	// Return nil if userID is 0
+	if userID == 0 {
+		return nil, nil
+	}
 
-    var user models.UsersModel
-    if err := DB.Where("user_id = ?", userID).First(&user).Error; err != nil {
-        return nil, err
-    }
-    return &user, nil
+	var user models.UsersModel
+	if err := DB.Where("user_id = ?", userID).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
-
-
-func GetReservationByID(tableID uint)(*models.TablesModel,error){
-	var reservation models.TablesModel
-	if err := DB.Where("table_id = ?",tableID).First(&reservation).Error; err != nil{
-		return nil,err
+// GetReservationByID retrieves a reservation by user ID.
+func GetReservationByID(userID uint) (*models.ReservationModels, error) {
+	var reservation models.ReservationModels
+	if err := DB.Where("user_id = ?", userID).Find(&reservation).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return &reservation, nil
 }

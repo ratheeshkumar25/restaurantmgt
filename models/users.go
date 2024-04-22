@@ -2,26 +2,23 @@ package models
 
 import "github.com/dgrijalva/jwt-go"
 
-// user entity creation
-
+// UsersModel represents a user entity.
 type UsersModel struct {
 	UserID   int    `gorm:"primaryKey;autoIncrement"`
 	Phone    string `json:"phone" validate:"required"`
-	Username string `json:"username"`
+	// Username string `json:"username"`
 }
 
-//verify the otp
-
+// VerifyOTP represents the structure for verifying OTP.
 type VerifyOTP struct {
 	Username string `json:"username"`
 	Phone    string `json:"phone"`
 	Otp      string `json:"otp"`
 }
 
-//Userclaims struct for JWT authentication
-
+// UserClaims represents the claims of the user JWT token.
 type UserClaims struct {
-	UserID uint 
-	Phone string `json:"phone"`
+	UserID uint
+	Phone  string `json:"phone"`
 	jwt.StandardClaims
 }

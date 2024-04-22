@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// MenuModel represents a menu item.
 type MenuModel struct {
 	gorm.Model
 	Category  string  `json:"category" validate:"required"`
