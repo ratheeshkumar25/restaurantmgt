@@ -167,8 +167,14 @@ func CancelOrder(c *gin.Context) {
 		return
 	}
 
+	if invoice.PaymentStatus == PaymentComplete {
+		c.JSON(400, gin.H{"error": "Unable to cancel the order, kindly check with cashier"})
+		return
+	}
+
 	if invoice.PaymentStatus == PaymentCancelled {
 		c.JSON(404, gin.H{"error": "Order is already canceled"})
+		return
 	}
 
 	invoice.PaymentStatus = PaymentCancelled
@@ -338,12 +344,6 @@ func PayInvoice(c *gin.Context) {
 		return
 	}
 
-	// err = middleware.SendEmail("Payment successful for invoice"+invoiceID, invoice.Email)
-	// if err != nil {
-	// 	c.JSON(500, gin.H{"error": "Failed to send email"})
-	// 	return
-	// }
-
 	//Generate PDF invoice
 	pdfBytes, err := GeneratePDFInvoice(invoice)
 	if err != nil {
@@ -351,12 +351,12 @@ func PayInvoice(c *gin.Context) {
 		return
 	}
 
-		// // Send payment confirmation email with PDF invoice attached
-		err = middleware.SendEmail("Payment successful for invoice"+invoiceID, invoice.Email, "invoice.pdf", pdfBytes)
-		if err != nil {
-			c.JSON(500, gin.H{"error": "Failed to send email"})
-			return
-		}
+	// // Send payment confirmation email with PDF invoice attached
+	err = middleware.SendEmail("Payment successful for invoice"+invoiceID, invoice.Email, "invoice.pdf", pdfBytes)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to send email"})
+		return
+	}
 	//  c.JSON(200, gin.H{"messgae": "Email notification send successfully"})
 
 	c.JSON(http.StatusOK, gin.H{"message": "Payment successful", "invoice": invoice})
@@ -392,47 +392,39 @@ func GetPDFInvoice(c *gin.Context) {
 }
 
 func GeneratePDFInvoice(invoice models.InvoicesModel) ([]byte, error) {
-    pdf := gofpdf.New("P", "mm", "A6", "")
-    pdf.AddPage()
-    pdf.SetFont("Arial", "B", 10)
-    // pdf.Cell(40, 10, "Invoice")
-	// pdf.Ln(20)
-    // // Add invoice details to the PDF
-    // pdf.Cell(20, 5, fmt.Sprintf("Invoice ID: %d", invoice.InvoiceID))
-	// pdf.Cell(20,5,fmt.Sprintf("Quantity:%d",invoice.Quantity))
-    // pdf.Cell(30, 10, fmt.Sprintf("Total Amount: %.2f", invoice.TotalAmount))
-    // // Add more details as needed
-	    // Add "Go Restaurant" as header
-		pdf.Cell(40, 10, "Go Restaurant")
-		pdf.Ln(10) // Move down for spacing
-	
-		// Add title "Invoice"
-		pdf.SetFont("Arial", "B", 12) // Set font size for the title
-		pdf.Cell(40, 10, "Invoice")
-		pdf.Ln(10) // Move down for spacing
-	
-		// Set font size for details
-		pdf.SetFont("Arial", "", 10)
-	
-		// Add invoice details to the PDF
-		pdf.Cell(20, 5, fmt.Sprintf("Invoice ID: %d", invoice.InvoiceID))
-		pdf.Ln(5)
-		pdf.Cell(20, 5, fmt.Sprintf("Quantity: %d", invoice.Quantity))
-		pdf.Ln(10) // Move down for spacing
-		pdf.Cell(30, 10, fmt.Sprintf("Total Amount: %.2f", invoice.TotalAmount))
-	
-		// Add line
-		pdf.Line(10, pdf.GetY(), 90, pdf.GetY())
-	
-		// Add "Thank you for choosing. Welcome back again!"
-		pdf.Ln(10) // Move down for spacing
-		pdf.Cell(40, 10, "Thank you for choosing. Welcome back again!")
+	pdf := gofpdf.New("P", "mm", "A6", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 10)
+	// Add "Go Restaurant" as header
+	pdf.Cell(40, 10, "Go Restaurant")
+	pdf.Ln(10) // Move down for spacing
+
+	// Add title "Invoice"
+	pdf.SetFont("Arial", "B", 12) // Set font size for the title
+	pdf.Cell(40, 10, "Invoice")
+	pdf.Ln(10) // Move down for spacing
+
+	// Set font size for details
+	pdf.SetFont("Arial", "", 10)
+
+	// Add invoice details to the PDF
+	pdf.Cell(20, 5, fmt.Sprintf("Invoice ID: %d", invoice.InvoiceID))
+	pdf.Ln(5)
+	pdf.Cell(20, 5, fmt.Sprintf("Quantity: %d", invoice.Quantity))
+	pdf.Ln(10) // Move down for spacing
+	pdf.Cell(30, 10, fmt.Sprintf("Total Amount: %.2f", invoice.TotalAmount))
+
+	// Add line
+	pdf.Line(10, pdf.GetY(), 90, pdf.GetY())
+
+	// Add "Thank you for choosing. Welcome back again!"
+	pdf.Ln(10) // Move down for spacing
+	pdf.Cell(40, 10, "Thank you for choosing. Welcome back again!")
 	var buf bytes.Buffer
-    err := pdf.Output(&buf)
-    if err != nil {
-        return nil, err
-    }
+	err := pdf.Output(&buf)
+	if err != nil {
+		return nil, err
+	}
 
-    return buf.Bytes(), nil
+	return buf.Bytes(), nil
 }
-

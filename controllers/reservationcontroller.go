@@ -1,13 +1,18 @@
 package controllers
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"restaurant/database"
+	"restaurant/middleware"
 	"restaurant/models"
+
+	//"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jung-kurt/gofpdf"
 	"gorm.io/gorm"
 )
 
@@ -49,8 +54,22 @@ func CreateReservartion(c *gin.Context) {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
+	//Generate PDF for the reservation
+	pdfBytes, err := GeneratePDFReservation(reservation)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to generate the Reservartion PDF"})
+		return
+	}
+
+	//Send the reservation confirmation email with PDF invoice attached
+	err = middleware.SendEmail("Reservation done successfully", reservation.Email, "invoice.pdf", pdfBytes)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to send email"})
+		return
+	}
+
 	c.JSON(201, gin.H{
-		"message":       "Reservation created successfully",
+		"message":       "Reservation created successfully-Confirmation email send",
 		"reservation":   reservation.ID,
 		"customerID":    reservation.UserID,
 		"selectedGuest": reservation.NumberOfGuest,
@@ -63,14 +82,15 @@ func CreateReservartion(c *gin.Context) {
 }
 
 func UpdateReservation(c *gin.Context) {
+	//Get the reservation ID from the request URL 
 	reservationID := c.Param("id")
+	//Reterive the existing reservation from the database
 	var reservation models.ReservationModels
-
 	if err := database.DB.First(&reservation, reservationID).Error; err != nil {
 		c.JSON(404, gin.H{"error": "Reservation not found"})
 		return
 	}
-
+	//Parase updated reservation data  from the requestbody
 	var updatedReservation models.ReservationModels
 	if err := c.BindJSON(&updatedReservation); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
@@ -90,7 +110,7 @@ func UpdateReservation(c *gin.Context) {
 	reservation.StartTime = updatedReservation.StartTime
 	reservation.EndTime = updatedReservation.EndTime
 
-	//context
+	//Get userID from the context
 	userIDContext, _ := c.Get("userID")
 	fmt.Println(userIDContext)
 	userID := userIDContext.(uint)
@@ -113,7 +133,21 @@ func UpdateReservation(c *gin.Context) {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
+  // Generate PDF for the updated reservation
+	pdfBytes, err := GeneratePDFReservation(reservation)
+	if err != nil {
+	c.JSON(500, gin.H{"error": "Failed to generate PDF"})
+	return
+	}
+	
+	// Send email notification with the updated reservation PDF attached
+	err = middleware.SendEmail("Reservation updated successfully", reservation.Email, "invoice.pdf", pdfBytes)
+	if err != nil {
+	c.JSON(500, gin.H{"error": "Failed to send email"})
+	return
+	}
 
+	// Respond with updated reservation details
 	c.JSON(200, gin.H{
 		"message":       "Reservation updated successfully",
 		"reservation":   reservation.ID,
@@ -253,22 +287,25 @@ func checkAvailability(startTime, endTime time.Time, numGuests int) (*models.Tab
 		return nil, nil, fmt.Errorf("no available tables found")
 	}
 
+	// Get all existing reservations for the requested time slot
+	var existingReservations []models.ReservationModels
+	err = database.DB.Where("(start_time < ? AND end_time > ?) OR (start_time >= ? AND start_time < ?) OR (end_time > ? AND end_time <= ?)", endTime, startTime, startTime, endTime, startTime, endTime).Find(&existingReservations).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil, fmt.Errorf("failed to retrieve existing reservations: %v", err)
+	}
+
+	// Check if the selected table is not already reserved for the requested duration
+	for _, reservation := range existingReservations {
+		if reservation.TableID == availableTable.ID {
+			return nil, nil, fmt.Errorf("selected table is not available for the requested time slot")
+		}
+	}
+
 	// Get all available staff members
 	var availableStaffMembers []models.StaffModel
 	err = database.DB.Where("blocked = false").Find(&availableStaffMembers).Error
 	if err != nil {
 		return nil, nil, fmt.Errorf("no available staff found")
-	}
-
-	// Check if the table is not already reserved for the requested duration
-	var reservations []models.ReservationModels
-	err = database.DB.Where("table_id = ? AND ((start_time < ? AND end_time > ?) OR (start_time >= ? AND start_time < ?) OR (end_time > ? AND end_time <= ?))", availableTable.ID, startTime, endTime, startTime, endTime, startTime, endTime).Find(&reservations).Error
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to check table availability: %v", err)
-	}
-
-	if len(reservations) > 0 {
-		return nil, nil, fmt.Errorf("selected table is not available for the requested time slot")
 	}
 
 	// Check if a staff member is available for the requested duration
@@ -290,4 +327,49 @@ func checkAvailability(startTime, endTime time.Time, numGuests int) (*models.Tab
 	}
 
 	return &availableTable, &availableStaff, nil
+}
+
+func GeneratePDFReservation(reservation models.ReservationModels) ([]byte, error) {
+
+	pdf := gofpdf.New("P", "mm", "A6", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 10)
+	// Add "Go Restaurant" as header
+	pdf.Cell(40, 10, "Go Restaurant")
+	pdf.Ln(10) // Move down for spacing
+
+	// Add title "Invoice"
+	pdf.SetFont("Arial", "B", 12) // Set font size for the title
+	pdf.Cell(40, 10, "Reservation-Confirmation")
+	pdf.Ln(10) // Move down for spacing
+
+	// Set font size for details
+	pdf.SetFont("Arial", "", 10)
+
+	// Add invoice details to the PDF
+	pdf.Cell(20, 5, fmt.Sprintf("Reservation: %d", reservation.ID))
+	pdf.Ln(5)
+	pdf.Cell(20, 5, fmt.Sprintf("Table: %d", reservation.TableID))
+	pdf.Ln(5)
+	pdf.Cell(20, 5, fmt.Sprintf("Number of Guest: %d", reservation.NumberOfGuest))
+	pdf.Ln(5)
+	pdf.Cell(20, 5, fmt.Sprintf("StaffID to served: %d", reservation.StaffID))
+	pdf.Ln(10) // Move down for spacing
+	pdf.Cell(30, 10, fmt.Sprintf("Start Time: %s", reservation.StartTime.Format("2006-01-02 15:04:05")))
+	pdf.Ln(10) // Move down for spacing
+	pdf.Cell(30, 10, fmt.Sprintf("End Time: %s", reservation.EndTime.Format("2006-01-02 15:04:05")))
+
+	// Add line
+	pdf.Line(10, pdf.GetY(), 90, pdf.GetY())
+
+	// Add "Thank you for choosing. Welcome back again!"
+	pdf.Ln(10) // Move down for spacing
+	pdf.Cell(40, 10, "Thank you for choosing. Welcome back again!")
+	var buf bytes.Buffer
+	err := pdf.Output(&buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }

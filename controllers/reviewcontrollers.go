@@ -11,6 +11,7 @@ import (
 )
 
 func ViewReview(c *gin.Context) {
+	// Fetch all reviews from the database
 	var feedback []models.ReviewModel
 	if err := database.DB.Find(&feedback).Error; err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})

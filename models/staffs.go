@@ -9,5 +9,4 @@ type StaffModel struct {
 	Role      string `json:"staffrole"`
 	Salary    int    `json:"salary"`
 	Blocked   bool   `json:"blocked"`
-	//TableID    uint
 }

@@ -1,14 +1,9 @@
 package controllers
 
 import (
-	//"errors"
-	//"fmt"
-	//"net/http"
 	"restaurant/database"
 	"restaurant/models"
-
 	"github.com/gin-gonic/gin"
-	//"gorm.io/gorm"
 )
 
 // Getstaff details
