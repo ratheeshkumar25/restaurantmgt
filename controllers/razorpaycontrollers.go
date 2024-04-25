@@ -122,14 +122,6 @@ func SuccessPage(c *gin.Context) {
 	if err := database.DB.Create(&razorPayment).Error; err != nil {
 		c.JSON(500, gin.H{"error": "Failed to create Razorpay payment"})
 	}
-
-	// Send email confirmation
-	// if err := middleware.SendEmail("Your payment was successful!", invoice.Email,); err != nil {
-	// 	c.JSON(500, gin.H{"error": "Failed to send email confirmation"})
-	// 		return
-	// 		//fmt.Println("hi",err)
-	// }
-
 	// Generate PDF invoice
 	pdfBytes, err := GeneratePDFInvoice(invoice)
 	if err != nil {

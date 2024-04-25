@@ -83,8 +83,14 @@ func CreateMenu(c *gin.Context) {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	fmt.Println("Menu added", menu)
-	c.JSON(201, gin.H{"message": "Item added successfully", "data": menu})
+	response := gin.H{
+		"ItemID":menu.ID,
+		"Category":menu.Category,
+		"Price":menu.Price,
+		"FoodImage":menu.FoodImage,
+		"Duration":menu.Duration,
+	}
+	c.JSON(201, gin.H{"message": "Item added successfully", "data": response})
 }
 
 // Update the menu for admin with authentication
@@ -111,7 +117,7 @@ func UpdateMenu(c *gin.Context) {
 	existingMenu.Price = menu.Price
 	existingMenu.FoodImage = menu.FoodImage
 	existingMenu.Duration = menu.Duration
-	existingMenu.TableID = menu.TableID
+
 
 	//save the updated menu item to the database
 
@@ -119,10 +125,18 @@ func UpdateMenu(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update menu"})
 		return
 	}
+
+	response := gin.H{
+		"ItemID":menu.ID,
+		"Category":menu.Category,
+		"Price":menu.Price,
+		"FoodImage":menu.FoodImage,
+		"Duration":menu.Duration,
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "Success",
 		"message": "Menu Details Updated successfully",
-		"data":    menu,
+		"data":    response,
 	})
 }
 

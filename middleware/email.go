@@ -17,7 +17,7 @@ func SendEmail(msg, email, attachmentName string, attachmentData []byte) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", senderEmail)
 	m.SetHeader("To", email)
-	m.SetHeader("Subject", "Order Confirmation")
+	m.SetHeader("Subject", "Confirmation-Email")
 	m.SetBody("text/plain", msg)
 
 	

@@ -330,46 +330,67 @@ func checkAvailability(startTime, endTime time.Time, numGuests int) (*models.Tab
 }
 
 func GeneratePDFReservation(reservation models.ReservationModels) ([]byte, error) {
+    pdf := gofpdf.New("P", "mm", "A4", "")
+    pdf.AddPage()
+    pdf.SetFont("Arial", "B", 10)
 
-	pdf := gofpdf.New("P", "mm", "A6", "")
-	pdf.AddPage()
-	pdf.SetFont("Arial", "B", 10)
-	// Add "Go Restaurant" as header
-	pdf.Cell(40, 10, "Go Restaurant")
-	pdf.Ln(10) // Move down for spacing
+    // Set text color to purple for the heading
+    pdf.SetTextColor(128, 0, 128) // Purple color
 
-	// Add title "Invoice"
-	pdf.SetFont("Arial", "B", 12) // Set font size for the title
-	pdf.Cell(40, 10, "Reservation-Confirmation")
-	pdf.Ln(10) // Move down for spacing
+    // Add "Go Restaurant" as header with hotel address
+    pdf.CellFormat(0, 10, "Go Restaurant", "", 0, "L", false, 0, "")
+    pdf.Ln(5) // Move down for spacing
+    pdf.SetFont("Arial", "", 8)
+    pdf.CellFormat(0, 10, "HSR, Layout, Bengaluru, Karnataka-560102", "", 0, "L", false, 0, "")
+    pdf.Ln(10) // Move down for spacing
 
-	// Set font size for details
-	pdf.SetFont("Arial", "", 10)
+    // Add title "Reservation Confirmation"
+    pdf.SetFont("Arial", "B", 10) // Set font size for the title
+    pdf.CellFormat(0, 10, "Reservation Confirmation", "", 0, "C", false, 0, "")
+    pdf.Ln(10) // Move down for spacing
 
-	// Add invoice details to the PDF
-	pdf.Cell(20, 5, fmt.Sprintf("Reservation: %d", reservation.ID))
-	pdf.Ln(5)
-	pdf.Cell(20, 5, fmt.Sprintf("Table: %d", reservation.TableID))
-	pdf.Ln(5)
-	pdf.Cell(20, 5, fmt.Sprintf("Number of Guest: %d", reservation.NumberOfGuest))
-	pdf.Ln(5)
-	pdf.Cell(20, 5, fmt.Sprintf("StaffID to served: %d", reservation.StaffID))
-	pdf.Ln(10) // Move down for spacing
-	pdf.Cell(30, 10, fmt.Sprintf("Start Time: %s", reservation.StartTime.Format("2006-01-02 15:04:05")))
-	pdf.Ln(10) // Move down for spacing
-	pdf.Cell(30, 10, fmt.Sprintf("End Time: %s", reservation.EndTime.Format("2006-01-02 15:04:05")))
+    // Add subject line with big font
+    pdf.SetFont("Arial", "B", 10)
+    pdf.CellFormat(0, 10, "Dear valued customer,", "", 0, "L", false, 0, "")
+    pdf.Ln(3)
+    pdf.CellFormat(0, 10, "Your table has been reserved and below are your reservation details:", "", 0, "L", false, 0, "")
+    pdf.Ln(10) // Move down for spacing
 
-	// Add line
-	pdf.Line(10, pdf.GetY(), 90, pdf.GetY())
+    // Create a separate box for reservation details
+    pdf.SetFillColor(220, 220, 220) // Light gray background color
+    pdf.Rect(10, pdf.GetY(), 190, 60, "F")
+    pdf.SetFont("Arial", "", 10)
+    pdf.SetTextColor(0, 0, 0) // Black text color
 
-	// Add "Thank you for choosing. Welcome back again!"
-	pdf.Ln(10) // Move down for spacing
-	pdf.Cell(40, 10, "Thank you for choosing. Welcome back again!")
-	var buf bytes.Buffer
-	err := pdf.Output(&buf)
-	if err != nil {
-		return nil, err
-	}
+    // Add reservation details inside the box
+    pdf.Ln(2) // Move down for spacing within the box
+    pdf.CellFormat(0, 7, fmt.Sprintf("Reservation: %d", reservation.ID), "", 0, "L", false, 0, "")
+    pdf.Ln(7)
+    pdf.CellFormat(0, 7, fmt.Sprintf("Table: %d", reservation.TableID), "", 0, "L", false, 0, "")
+    pdf.Ln(7)
+    pdf.CellFormat(0, 7, fmt.Sprintf("Number of Guests: %d", reservation.NumberOfGuest), "", 0, "L", false, 0, "")
+    pdf.Ln(7)
+    pdf.CellFormat(0, 7, fmt.Sprintf("Staff ID to Serve: %d", reservation.StaffID), "", 0, "L", false, 0, "")
+    pdf.Ln(7)
+    pdf.CellFormat(0, 7, fmt.Sprintf("Start Time: %s", reservation.StartTime.Format("2006-01-02 15:04:05")), "", 0, "L", false, 0, "")
+    pdf.Ln(7)
+    pdf.CellFormat(0, 7, fmt.Sprintf("End Time: %s", reservation.EndTime.Format("2006-01-02 15:04:05")), "", 0, "L", false, 0, "")
 
-	return buf.Bytes(), nil
+    // Add "Thank you for choosing. Welcome back again!" message
+    pdf.SetFont("Arial", "I", 10)
+    pdf.SetTextColor(255, 0, 0) // Red text color
+    pdf.Ln(10)                    // Move down for spacing
+    pdf.CellFormat(0, 10, "Thank you for choosing. Welcome back again!", "", 0, "C", false, 0, "")
+    pdf.Ln(5) // Move down for spacing
+
+    // Add system-generated confirmation message
+    pdf.CellFormat(0, 10, "This is a system-generated reservation confirmation.", "", 0, "C", false, 0, "")
+
+    var buf bytes.Buffer
+    err := pdf.Output(&buf)
+    if err != nil {
+        return nil, err
+    }
+
+    return buf.Bytes(), nil
 }

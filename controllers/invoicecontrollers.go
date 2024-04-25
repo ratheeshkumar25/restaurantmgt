@@ -359,7 +359,7 @@ func PayInvoice(c *gin.Context) {
 	}
 	//  c.JSON(200, gin.H{"messgae": "Email notification send successfully"})
 
-	c.JSON(http.StatusOK, gin.H{"message": "Payment successful", "invoice": invoice})
+	c.JSON(http.StatusOK, gin.H{"message": "Payment successful,Invoice send to email", "invoice": invoice})
 }
 
 func GetPDFInvoice(c *gin.Context) {
@@ -391,40 +391,86 @@ func GetPDFInvoice(c *gin.Context) {
 	c.Data(http.StatusOK, "application/pdf", pdfBytes)
 }
 
+// Generate invoice for the after the payment
 func GeneratePDFInvoice(invoice models.InvoicesModel) ([]byte, error) {
-	pdf := gofpdf.New("P", "mm", "A6", "")
+	// Create a new A5 portrait PDF document
+	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
-	pdf.SetFont("Arial", "B", 10)
-	// Add "Go Restaurant" as header
-	pdf.Cell(40, 10, "Go Restaurant")
-	pdf.Ln(10) // Move down for spacing
 
-	// Add title "Invoice"
-	pdf.SetFont("Arial", "B", 12) // Set font size for the title
-	pdf.Cell(40, 10, "Invoice")
-	pdf.Ln(10) // Move down for spacing
+	// Define base styles for headings and details
+	headingFont := "Arial"
+	detailFont := "Arial"
 
-	// Set font size for details
-	pdf.SetFont("Arial", "", 10)
+	// Set font and color for header
+	pdf.SetTextColor(128, 0, 128) // Purple
+	pdf.SetFont(headingFont, "B", 12)
 
-	// Add invoice details to the PDF
-	pdf.Cell(20, 5, fmt.Sprintf("Invoice ID: %d", invoice.InvoiceID))
-	pdf.Ln(5)
-	pdf.Cell(20, 5, fmt.Sprintf("Quantity: %d", invoice.Quantity))
-	pdf.Ln(10) // Move down for spacing
-	pdf.Cell(30, 10, fmt.Sprintf("Total Amount: %.2f", invoice.TotalAmount))
+	// Add header with business title
+	pdf.CellFormat(90, 10, "Go- Restaurant", "", 0, "L", false, 0, "")
+	pdf.Ln(6) // Add some spacing
 
-	// Add line
-	pdf.Line(10, pdf.GetY(), 90, pdf.GetY())
+	// Set font size and style for address
+	pdf.SetFont(headingFont, "", 8)
 
-	// Add "Thank you for choosing. Welcome back again!"
-	pdf.Ln(10) // Move down for spacing
-	pdf.Cell(40, 10, "Thank you for choosing. Welcome back again!")
+	// Combine address and phone number in a single string
+	address := ("GSTIN: 29AAAKCP, Address: HSR, Bengaluru Urban, Karnataka, 560102, Phone: 73136102125")
+
+	// Add address with left alignment
+	pdf.MultiCell(90, 8, address, "", "L", false)
+	pdf.Ln(4) // Add spacing
+
+	// Add space before invoice details section
+	pdf.Ln(6)
+
+	// Add invoice heading
+	pdf.SetTextColor(0, 0, 0) // Black
+	pdf.SetFont(headingFont, "B", 10)
+	pdf.CellFormat(90, 10, "Invoice Details", "1", 0, "C", false, 0, "")
+	pdf.Ln(6) // Add spacing
+
+	// Set font and color for invoice details header
+	pdf.SetFont(headingFont, "B", 8)
+
+	// **Reduce number of columns to 3**
+	tableWidth := 90.0 // Adjust table width as needed
+	cellWidth := tableWidth / 3.0
+
+	// Add invoice details header with centered alignment within columns
+	pdf.CellFormat(cellWidth, 10, "Invoice ID", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(cellWidth, 10, "Quantity", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(cellWidth, 10, "Total Amount", "1", 0, "C", false, 0, "")
+	pdf.Ln(10) // Add spacing
+
+	// Set font size and style for invoice details
+	pdf.SetFont(detailFont, "", 8)
+
+	// Add invoice details with center alignment within columns
+	pdf.CellFormat(cellWidth, 8, fmt.Sprintf("%d", invoice.InvoiceID), "1", 0, "C", false, 0, "")
+	pdf.CellFormat(cellWidth, 8, fmt.Sprintf("%d", invoice.Quantity), "1", 0, "C", false, 0, "")
+	pdf.CellFormat(cellWidth, 8, fmt.Sprintf("%.2f", invoice.TotalAmount), "1", 0, "C", false, 0, "")
+	pdf.Ln(10) // Add spacing
+
+	// Set font and color for thank you message
+	pdf.SetTextColor(0, 128, 0) // Green
+	pdf.SetFont(detailFont, "", 10)
+
+	// Add centered thank you message
+	pdf.CellFormat(90, 10, "Thank you for choosing. Welcome back again!", "", 0, "C", false, 0, "")
+	pdf.Ln(12) // Add spacing
+
+	// Set font style for footer message
+	pdf.SetFont(detailFont, "I", 8)
+
+	// Add centered footer indicating system-generated invoice
+	pdf.CellFormat(90, 10, "This is a system-generated invoice.", "", 0, "C", false, 0, "")
+
+	// Create a buffer to hold the PDF data
 	var buf bytes.Buffer
 	err := pdf.Output(&buf)
 	if err != nil {
 		return nil, err
 	}
 
+	// Return the PDF data as a byte slice
 	return buf.Bytes(), nil
 }

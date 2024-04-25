@@ -18,7 +18,7 @@ type ReservationModels struct {
 	gorm.Model
 	Date          time.Time `json:"date" gorm:"column:date"`
 	TableID       uint      `json:"tableID"`
-	Email 		  string	`json:"email"`
+	Email         string    `json:"email"`
 	NumberOfGuest int       `json:"numberofGuest"`
 	StartTime     time.Time `json:"startTime"`
 	EndTime       time.Time `json:"endTime"`

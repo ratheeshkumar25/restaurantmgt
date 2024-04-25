@@ -20,8 +20,8 @@ func CreateTable(c *gin.Context) {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	if err := database.DB.Create(&table).Error; err != nil{
-		c.JSON(400,gin.H{"error":err.Error()})
+	if err := database.DB.Create(&table).Error; err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(201, gin.H{
@@ -34,31 +34,31 @@ func CreateTable(c *gin.Context) {
 	})
 }
 
-//Update the table details 
-func UpdateTable(c *gin.Context){
+// Update the table details
+func UpdateTable(c *gin.Context) {
 	var table models.TablesModel
-	if err := c.ShouldBindJSON(&table);err != nil{
-		c.JSON(400,gin.H{"error":err.Error()})
+	if err := c.ShouldBindJSON(&table); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	tableID ,err := strconv.Atoi(c.Param("id"))
-	if err != nil{
-		c.JSON(400,gin.H{"error":"invalid "})
+	tableID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid "})
 		return
 	}
 	var existingTable models.TablesModel
 
-	if err := database.DB.First(&existingTable,tableID).Error; err != nil{
-		c.JSON(400,gin.H{"error":"Table not found"})
+	if err := database.DB.First(&existingTable, tableID).Error; err != nil {
+		c.JSON(400, gin.H{"error": "Table not found"})
 		return
 	}
-	//update the fileds of existing tablelist 
+	//update the fileds of existing tablelist
 	existingTable.ID = uint(tableID)
 	existingTable.Capacity = table.Capacity
 	existingTable.Availability = table.Availability
 
-	if err := database.DB.Save(&existingTable).Error; err != nil{
-		c.JSON(500,gin.H{"error":"failed to update table"})
+	if err := database.DB.Save(&existingTable).Error; err != nil {
+		c.JSON(500, gin.H{"error": "failed to update table"})
 		return
 	}
 
@@ -71,31 +71,31 @@ func UpdateTable(c *gin.Context){
 		},
 	})
 }
-//Remove the table 
-func RemoveTable(c*gin.Context){
+
+// Remove the table
+func RemoveTable(c *gin.Context) {
 	tableID := c.Param("id")
 	var table models.TablesModel
 
-	if err := database.DB.First(&table,tableID).Error;err !=nil{
-		c.JSON(404,gin.H{
-			"status":"Failed",
-			"message":"tableID not found",
-			"data":err.Error(),
+	if err := database.DB.First(&table, tableID).Error; err != nil {
+		c.JSON(404, gin.H{
+			"status":  "Failed",
+			"message": "tableID not found",
+			"data":    err.Error(),
 		})
 		return
 	}
 
 	database.DB.Delete(&table)
-	c.JSON(200,gin.H{
-		"status":"success",
-		"message":"Table removed successfully",
-		"data":gin.H{
-			"tableID":table.ID,
-			"capacity":table.Capacity,
-			"avilability":table.Availability,
+	c.JSON(200, gin.H{
+		"status":  "success",
+		"message": "Table removed successfully",
+		"data": gin.H{
+			"tableID":     table.ID,
+			"capacity":    table.Capacity,
+			"avilability": table.Availability,
 		},
 	})
-
 
 }
 
@@ -104,11 +104,11 @@ func GetTables(c *gin.Context) {
 	//reterive the tableinformation
 	var tables []models.TablesModel
 	database.DB.Find(&tables)
-	response := make([]gin.H,len(tables))
-	for i,tableData := range tables{
+	response := make([]gin.H, len(tables))
+	for i, tableData := range tables {
 		response[i] = gin.H{
-			"tableID":tableData.ID,
-			"capacity":tableData.Capacity,
+			"tableID":  tableData.ID,
+			"capacity": tableData.Capacity,
 		}
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -137,4 +137,3 @@ func GetTable(c *gin.Context) {
 	})
 
 }
-

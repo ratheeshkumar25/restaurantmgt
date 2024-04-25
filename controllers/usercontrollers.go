@@ -16,7 +16,8 @@ import (
 	verify "github.com/twilio/twilio-go/rest/verify/v2"
 	"gorm.io/gorm"
 )
-//User Login
+
+// User Login
 func GetHome(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Welcome to RERA Restaurant World Please log in with your mobile"})
@@ -33,12 +34,12 @@ func PostLogin(c *gin.Context) {
 	// Check if user exists in database
 	if err := database.DB.Where("phone = ?", users.Phone).First(&users).Error; err == nil {
 		// // Generate Token
-		token, err := middleware.GenerateUsertoken(users.Phone,uint(users.UserID))
+		token, err := middleware.GenerateUsertoken(users.Phone, uint(users.UserID))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 			return
 		}
-		
+
 		c.JSON(http.StatusOK, gin.H{"message": "Token Generated Succesfully", "token": token})
 
 		return
@@ -53,10 +54,10 @@ func PostLogin(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send OTP", "data": err.Error()})
 		return
 	}
- //Marshal json data 
+	//Marshal json data
 	userData, err := json.Marshal(&users)
 	if err != nil {
-		c.JSON(500,gin.H{"error":"failed to marshal user", "data":err.Error()})
+		c.JSON(500, gin.H{"error": "failed to marshal user", "data": err.Error()})
 		return
 	}
 
@@ -145,11 +146,11 @@ func SignupVerify(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"Success": false, "Data": nil, "Message": "Internal server error"})
 		return
 	}
-   // Bind json data to unmarshal
+	// Bind json data to unmarshal
 	var user models.UsersModel
-	err = json.Unmarshal([]byte(value),&user)
+	err = json.Unmarshal([]byte(value), &user)
 	if err != nil {
-		c.JSON(500,gin.H{"error":"failed to marshal user", "data":err.Error()})
+		c.JSON(500, gin.H{"error": "failed to marshal user", "data": err.Error()})
 		return
 	}
 

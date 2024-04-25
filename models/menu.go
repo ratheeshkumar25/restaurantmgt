@@ -12,5 +12,5 @@ type MenuModel struct {
 	Price     float64 `json:"price" validate:"required"`
 	FoodImage string  `json:"foodImage" validate:"required"`
 	Duration  string  `json:"duration" validate:"required"`
-	TableID   int     `json:"tableID"`
+	
 }
