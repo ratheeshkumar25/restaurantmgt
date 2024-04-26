@@ -22,33 +22,32 @@ func CreateReservartion(c *gin.Context) {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	//check for available tables and staff
+	// Check if the user already has a reservation for the requested time slot
+	userIDContext, _ := c.Get("userID")
+	userID := userIDContext.(uint)
+
+	var existingReservation models.ReservationModels
+	err := database.DB.Where("user_id = ? AND ((start_time < ? AND end_time > ?) OR (start_time >= ? AND start_time < ?) OR (end_time > ? AND end_time <= ?))", userID, reservation.EndTime, reservation.StartTime, reservation.StartTime, reservation.EndTime, reservation.StartTime, reservation.EndTime).First(&existingReservation).Error
+	if err == nil {
+		c.JSON(400, gin.H{"error": "You already have a reservation for the requested time slot"})
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(500, gin.H{"error": "Failed to check existing reservation"})
+		return
+	}
+
+	// Check for available tables and staff
 	availableTable, availableStaff, err := checkAvailability(reservation.StartTime, reservation.EndTime, reservation.NumberOfGuest)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	//Assign tthe available table and staff to reservation
+
+	// Assign the available table and staff to the reservation
 	reservation.TableID = uint(availableTable.ID)
 	reservation.StaffID = availableStaff.ID
-	//context
-	userIDContext, _ := c.Get("userID")
-	fmt.Println(userIDContext)
-	userID := userIDContext.(uint)
+	reservation.UserID = userID
 
-	var bookingID models.UsersModel
-
-	if err := database.DB.Where("user_id = ?", userID).First(&bookingID).Error; err == gorm.ErrRecordNotFound {
-		c.JSON(200, gin.H{"status": "Success",
-			"message": "No booking",
-			"data":    nil})
-		return
-	} else if err != nil {
-		c.JSON(404, gin.H{"status": "Failed",
-			"message": "Database error",
-			"data":    nil})
-		return
-	}
 	reservation.UserID = userID
 	if err := database.DB.Create(&reservation).Error; err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
@@ -62,7 +61,7 @@ func CreateReservartion(c *gin.Context) {
 	}
 
 	//Send the reservation confirmation email with PDF invoice attached
-	err = middleware.SendEmail("Reservation done successfully", reservation.Email, "invoice.pdf", pdfBytes)
+	err = middleware.SendEmail("Reservation done successfully", reservation.Email, "reservation.pdf", pdfBytes)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to send email"})
 		return
@@ -82,7 +81,7 @@ func CreateReservartion(c *gin.Context) {
 }
 
 func UpdateReservation(c *gin.Context) {
-	//Get the reservation ID from the request URL 
+	//Get the reservation ID from the request URL
 	reservationID := c.Param("id")
 	//Reterive the existing reservation from the database
 	var reservation models.ReservationModels
@@ -133,18 +132,18 @@ func UpdateReservation(c *gin.Context) {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-  // Generate PDF for the updated reservation
+	// Generate PDF for the updated reservation
 	pdfBytes, err := GeneratePDFReservation(reservation)
 	if err != nil {
-	c.JSON(500, gin.H{"error": "Failed to generate PDF"})
-	return
+		c.JSON(500, gin.H{"error": "Failed to generate PDF"})
+		return
 	}
-	
+
 	// Send email notification with the updated reservation PDF attached
 	err = middleware.SendEmail("Reservation updated successfully", reservation.Email, "invoice.pdf", pdfBytes)
 	if err != nil {
-	c.JSON(500, gin.H{"error": "Failed to send email"})
-	return
+		c.JSON(500, gin.H{"error": "Failed to send email"})
+		return
 	}
 
 	// Respond with updated reservation details
@@ -330,67 +329,69 @@ func checkAvailability(startTime, endTime time.Time, numGuests int) (*models.Tab
 }
 
 func GeneratePDFReservation(reservation models.ReservationModels) ([]byte, error) {
-    pdf := gofpdf.New("P", "mm", "A4", "")
-    pdf.AddPage()
-    pdf.SetFont("Arial", "B", 10)
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 10)
 
-    // Set text color to purple for the heading
-    pdf.SetTextColor(128, 0, 128) // Purple color
+	// Set text color to purple for the heading
+	pdf.SetTextColor(128, 0, 128) // Purple color
 
-    // Add "Go Restaurant" as header with hotel address
-    pdf.CellFormat(0, 10, "Go Restaurant", "", 0, "L", false, 0, "")
-    pdf.Ln(5) // Move down for spacing
-    pdf.SetFont("Arial", "", 8)
-    pdf.CellFormat(0, 10, "HSR, Layout, Bengaluru, Karnataka-560102", "", 0, "L", false, 0, "")
-    pdf.Ln(10) // Move down for spacing
+	// Add "Go Restaurant" as header with hotel address
+	pdf.CellFormat(0, 10, "Go Restaurant", "", 0, "L", false, 0, "")
+	pdf.Ln(5) // Move down for spacing
+	pdf.SetFont("Arial", "", 8)
+	pdf.CellFormat(0, 10, "HSR, Layout, Bengaluru, Karnataka-560102", "", 0, "L", false, 0, "")
+	pdf.Ln(10) // Move down for spacing
 
-    // Add title "Reservation Confirmation"
-    pdf.SetFont("Arial", "B", 10) // Set font size for the title
-    pdf.CellFormat(0, 10, "Reservation Confirmation", "", 0, "C", false, 0, "")
-    pdf.Ln(10) // Move down for spacing
+	// Add title "Reservation Confirmation"
+	pdf.SetFont("Arial", "B", 10) // Set font size for the title
+	pdf.CellFormat(0, 10, "Reservation Confirmation", "", 0, "C", false, 0, "")
+	pdf.Ln(10) // Move down for spacing
 
-    // Add subject line with big font
-    pdf.SetFont("Arial", "B", 10)
-    pdf.CellFormat(0, 10, "Dear valued customer,", "", 0, "L", false, 0, "")
-    pdf.Ln(3)
-    pdf.CellFormat(0, 10, "Your table has been reserved and below are your reservation details:", "", 0, "L", false, 0, "")
-    pdf.Ln(10) // Move down for spacing
+	// Add subject line with big font
+	pdf.SetFont("Arial", "B", 10)
+	pdf.CellFormat(0, 10, "Dear valued customer,", "", 0, "L", false, 0, "")
+	pdf.Ln(3)
+	pdf.CellFormat(0, 10, "Your table has been reserved and below are your reservation details:", "", 0, "L", false, 0, "")
+	pdf.Ln(10) // Move down for spacing
 
-    // Create a separate box for reservation details
-    pdf.SetFillColor(220, 220, 220) // Light gray background color
-    pdf.Rect(10, pdf.GetY(), 190, 60, "F")
-    pdf.SetFont("Arial", "", 10)
-    pdf.SetTextColor(0, 0, 0) // Black text color
+	// Create a separate box for reservation details
+	pdf.SetFillColor(220, 220, 220) // Light gray background color
+	pdf.Rect(10, pdf.GetY(), 190, 60, "F")
+	pdf.SetFont("Arial", "", 10)
+	pdf.SetTextColor(0, 0, 0) // Black text color
 
-    // Add reservation details inside the box
-    pdf.Ln(2) // Move down for spacing within the box
-    pdf.CellFormat(0, 7, fmt.Sprintf("Reservation: %d", reservation.ID), "", 0, "L", false, 0, "")
-    pdf.Ln(7)
-    pdf.CellFormat(0, 7, fmt.Sprintf("Table: %d", reservation.TableID), "", 0, "L", false, 0, "")
-    pdf.Ln(7)
-    pdf.CellFormat(0, 7, fmt.Sprintf("Number of Guests: %d", reservation.NumberOfGuest), "", 0, "L", false, 0, "")
-    pdf.Ln(7)
-    pdf.CellFormat(0, 7, fmt.Sprintf("Staff ID to Serve: %d", reservation.StaffID), "", 0, "L", false, 0, "")
-    pdf.Ln(7)
-    pdf.CellFormat(0, 7, fmt.Sprintf("Start Time: %s", reservation.StartTime.Format("2006-01-02 15:04:05")), "", 0, "L", false, 0, "")
-    pdf.Ln(7)
-    pdf.CellFormat(0, 7, fmt.Sprintf("End Time: %s", reservation.EndTime.Format("2006-01-02 15:04:05")), "", 0, "L", false, 0, "")
+	// Add reservation details inside the box
+	pdf.Ln(2) // Move down for spacing within the box
+	pdf.CellFormat(0, 7, fmt.Sprintf("Reservation: %d", reservation.ID), "", 0, "L", false, 0, "")
+	pdf.Ln(7)
+	pdf.CellFormat(0, 7, fmt.Sprintf("CustometrID: %d", reservation.UserID), "", 0, "L", false, 0, "")
+	pdf.Ln(7)
+	pdf.CellFormat(0, 7, fmt.Sprintf("Table: %d", reservation.TableID), "", 0, "L", false, 0, "")
+	pdf.Ln(7)
+	pdf.CellFormat(0, 7, fmt.Sprintf("Number of Guests: %d", reservation.NumberOfGuest), "", 0, "L", false, 0, "")
+	pdf.Ln(7)
+	pdf.CellFormat(0, 7, fmt.Sprintf("Staff ID to Serve: %d", reservation.StaffID), "", 0, "L", false, 0, "")
+	pdf.Ln(7)
+	pdf.CellFormat(0, 7, fmt.Sprintf("Start Time: %s", reservation.StartTime.Format("2006-01-02 15:04:05")), "", 0, "L", false, 0, "")
+	pdf.Ln(7)
+	pdf.CellFormat(0, 7, fmt.Sprintf("End Time: %s", reservation.EndTime.Format("2006-01-02 15:04:05")), "", 0, "L", false, 0, "")
 
-    // Add "Thank you for choosing. Welcome back again!" message
-    pdf.SetFont("Arial", "I", 10)
-    pdf.SetTextColor(255, 0, 0) // Red text color
-    pdf.Ln(10)                    // Move down for spacing
-    pdf.CellFormat(0, 10, "Thank you for choosing. Welcome back again!", "", 0, "C", false, 0, "")
-    pdf.Ln(5) // Move down for spacing
+	// Add "Thank you for choosing. Welcome back again!" message
+	pdf.SetFont("Arial", "I", 10)
+	pdf.SetTextColor(255, 0, 0) // Red text color
+	pdf.Ln(10)                  // Move down for spacing
+	pdf.CellFormat(0, 10, "Thank you for choosing. Welcome back again!", "", 0, "C", false, 0, "")
+	pdf.Ln(5) // Move down for spacing
 
-    // Add system-generated confirmation message
-    pdf.CellFormat(0, 10, "This is a system-generated reservation confirmation.", "", 0, "C", false, 0, "")
+	// Add system-generated confirmation message
+	pdf.CellFormat(0, 10, "This is a system-generated reservation confirmation.", "", 0, "C", false, 0, "")
 
-    var buf bytes.Buffer
-    err := pdf.Output(&buf)
-    if err != nil {
-        return nil, err
-    }
+	var buf bytes.Buffer
+	err := pdf.Output(&buf)
+	if err != nil {
+		return nil, err
+	}
 
-    return buf.Bytes(), nil
+	return buf.Bytes(), nil
 }

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"math"
 	"restaurant/database"
 	"restaurant/models"
 	"strconv"
@@ -106,7 +107,7 @@ func RevenueReport(c *gin.Context) {
 		TotalSalaryExpense     float64 `json:"totalSalaryExpense"`
 		Profit                 float64 `json:"profit"`
 	}
-	var revevuneData RevenueData
+	var revenueData RevenueData
 
 	//Calculate the total Revenue
 	var totalRevenue float64
@@ -117,7 +118,7 @@ func RevenueReport(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Failed to fetch total revenue"})
 		return
 	}
-	revevuneData.TotalRevenue = totalRevenue
+	revenueData.TotalRevenue = totalRevenue
 
 	// Calculate total orders
 	var totalOrders int64
@@ -126,11 +127,11 @@ func RevenueReport(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Failed to fetch total orders"})
 		return
 	}
-	revevuneData.TotalOrders = totalOrders
+	revenueData.TotalOrders = totalOrders
 
 	// Calculate average revenue per data
 	if totalOrders > 0 {
-		revevuneData.AverageRevenuePerOrder = totalRevenue / float64(totalOrders)
+		revenueData.AverageRevenuePerOrder = totalRevenue / float64(totalOrders)
 	}
 	// Calculate total salary expense
 	var totalSalaryExpense float64
@@ -141,11 +142,20 @@ func RevenueReport(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Failed to fetch total salary expense"})
 		return
 	}
-	revevuneData.TotalSalaryExpense = totalSalaryExpense
+	revenueData.TotalSalaryExpense = totalSalaryExpense
 
 	//calculate total profit
-	revevuneData.Profit = totalRevenue - totalSalaryExpense
+	revenueData.Profit = totalRevenue - totalSalaryExpense
 
-	c.JSON(200, revevuneData)
+	// Format the decimal values to two decimal points
+	revenueData.TotalRevenue = roundToTwoDecimalPlaces(revenueData.TotalRevenue)
+	revenueData.AverageRevenuePerOrder = roundToTwoDecimalPlaces(revenueData.AverageRevenuePerOrder)
+	revenueData.Profit = roundToTwoDecimalPlaces(revenueData.Profit)
 
+	c.JSON(200, revenueData)
+}
+
+// roundToTwoDecimalPlaces rounds a float64 value to two decimal places
+func roundToTwoDecimalPlaces(value float64) float64 {
+	return math.Round(value*100) / 100
 }
